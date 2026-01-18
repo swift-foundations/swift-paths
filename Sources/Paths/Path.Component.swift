@@ -31,7 +31,7 @@ extension Path {
         /// - Parameter string: The component string.
         /// - Throws: `Component.Error` if the string is invalid.
         @inlinable
-        public init(_ string: String) throws(Error) {
+        public init(_ string: Swift.String) throws(Error) {
             // Check non-empty
             guard !string.isEmpty else {
                 throw .empty
@@ -77,7 +77,7 @@ extension Path {
                     if byte < 0x20 || byte == 0x7F {
                         throw .containsControlCharacters
                     }
-                    buffer.append(CChar(bitPattern: byte))
+                    buffer.append(byte)  // Char is UInt8 on POSIX
                 }
                 buffer.append(0)  // Null terminator
                 self._storage = Path.Storage(buffer: buffer)
@@ -111,7 +111,7 @@ extension Path.Component {
 }
 
 extension Path.Component.Error: CustomStringConvertible {
-    public var description: String {
+    public var description: Swift.String {
         switch self {
         case .empty:
             return "Component is empty"
@@ -132,18 +132,19 @@ extension Path.Component.Error: CustomStringConvertible {
 extension Path.Component {
     /// The component as a String.
     @inlinable
-    public var string: String {
+    public var string: Swift.String {
         #if os(Windows)
             let units = _storage.buffer.dropLast()
-            return String(decoding: units, as: UTF16.self)
+            return Swift.String(decoding: units, as: UTF16.self)
         #else
-            let bytes = _storage.buffer.dropLast().map { UInt8(bitPattern: $0) }
-            return String(decoding: bytes, as: UTF8.self)
+            // Char is UInt8 on POSIX
+            let bytes = _storage.buffer.dropLast()
+            return Swift.String(decoding: bytes, as: UTF8.self)
         #endif
     }
 }
 
-extension String {
+extension Swift.String {
     /// Creates a string from a path component.
     @inlinable
     public init(_ component: Path.Component) {
@@ -169,7 +170,7 @@ extension Path.Component {
     /// print(c3.extension)  // nil (no dot)
     /// ```
     @inlinable
-    public var `extension`: String? {
+    public var `extension`: Swift.String? {
         let s = string
         guard let dotIndex = s.lastIndex(of: ".") else {
             return nil
@@ -183,7 +184,7 @@ extension Path.Component {
         if afterDot == s.endIndex {
             return nil
         }
-        return String(s[afterDot...])
+        return Swift.String(s[afterDot...])
     }
 
     /// The filename without the extension.
@@ -201,7 +202,7 @@ extension Path.Component {
     /// print(c3.stem)  // "archive.tar"
     /// ```
     @inlinable
-    public var stem: String {
+    public var stem: Swift.String {
         let s = string
         guard let dotIndex = s.lastIndex(of: ".") else {
             return s
@@ -215,14 +216,14 @@ extension Path.Component {
         if afterDot == s.endIndex {
             return s
         }
-        return String(s[..<dotIndex])
+        return Swift.String(s[..<dotIndex])
     }
 }
 
 // MARK: - CustomStringConvertible
 
 extension Path.Component: CustomStringConvertible {
-    public var description: String {
+    public var description: Swift.String {
         string
     }
 }
@@ -230,7 +231,7 @@ extension Path.Component: CustomStringConvertible {
 // MARK: - CustomDebugStringConvertible
 
 extension Path.Component: CustomDebugStringConvertible {
-    public var debugDescription: String {
+    public var debugDescription: Swift.String {
         "Path.Component(\"\(string)\")"
     }
 }

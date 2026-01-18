@@ -29,7 +29,7 @@ extension Path {
     /// - Precondition: The string must be a valid component or relative path.
     ///   Passing an absolute path or invalid string is a programmer error.
     @inlinable
-    public static func / (lhs: Path, rhs: String) -> Path {
+    public static func / (lhs: Path, rhs: Swift.String) -> Path {
         // Fast path: try as single component first (common case)
         if let component = try? Component.init(rhs) {
             return lhs.appending(component)
@@ -84,7 +84,7 @@ extension Path: ExpressibleByStringLiteral {
     /// let path: Path = "/Users/coen/Documents"
     /// ```
     @inlinable
-    public init(stringLiteral value: String) {
+    public init(stringLiteral value: Swift.String) {
         do {
             try self.init(value)
         } catch {
@@ -119,7 +119,7 @@ extension Path.Component: ExpressibleByStringLiteral {
     /// let component: Path.Component = "readme.txt"
     /// ```
     @inlinable
-    public init(stringLiteral value: String) {
+    public init(stringLiteral value: Swift.String) {
         do {
             try self.init(value)
         } catch {

@@ -36,13 +36,13 @@ extension Path {
                 char == "/" || char == "\\"
             }
             return parts.compactMap { part in
-                try? Component.init(String(part))
+                try? Component.init(Swift.String(part))
             }
         #else
             // Split on /
             let parts = s.split(separator: "/", omittingEmptySubsequences: true)
             return parts.compactMap { part in
-                try? Component.init(String(part))
+                try? Component.init(Swift.String(part))
             }
         #endif
     }
@@ -93,11 +93,11 @@ extension Path {
             let beforeSep = s[..<lastSep]
             if beforeSep.count == 2 && beforeSep.last == ":" {
                 // Return drive root (e.g., "C:\")
-                return try? Path.init(String(beforeSep) + "\\")
+                return try? Path.init(Swift.String(beforeSep) + "\\")
             }
 
             // Return parent
-            let parentStr = String(beforeSep)
+            let parentStr = Swift.String(beforeSep)
             return parentStr.isEmpty ? nil : try? Path.init(parentStr)
         #else
             // Find last separator
@@ -111,7 +111,7 @@ extension Path {
             }
 
             // Return parent
-            let parentStr = String(s[..<lastSep])
+            let parentStr = Swift.String(s[..<lastSep])
             return parentStr.isEmpty ? try? Path.init("/") : try? Path.init(parentStr)
         #endif
     }
@@ -155,7 +155,7 @@ extension Path {
     /// print(file.string)  // "/Users/coen/readme.txt"
     /// ```
     @inlinable
-    public func appending(_ string: String) throws(Component.Error) -> Path {
+    public func appending(_ string: Swift.String) throws(Component.Error) -> Path {
         let component = try Component(string)
         return appending(component)
     }

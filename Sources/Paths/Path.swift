@@ -22,7 +22,7 @@ public import Kernel_Primitives
 ///
 /// ## Platform Encoding
 ///
-/// - **POSIX (macOS, Linux, BSD):** UTF-8 (`CChar` / `Int8`)
+/// - **POSIX (macOS, Linux, BSD):** UTF-8 (`UInt8`)
 /// - **Windows:** UTF-16LE (`UInt16`)
 ///
 /// ## Usage
@@ -44,7 +44,7 @@ public struct Path: Copyable, Sendable, Hashable {
     /// - Parameter string: The path string.
     /// - Throws: `Path.Error` if the string is invalid.
     @inlinable
-    public init(_ string: String) throws(Error) {
+    public init(_ string: Swift.String) throws(Error) {
         self._storage = try Storage(string)
     }
 
@@ -60,13 +60,13 @@ public struct Path: Copyable, Sendable, Hashable {
 extension Path {
     /// Platform-native path character type.
     ///
-    /// - POSIX (macOS, Linux): `CChar` (Int8, UTF-8)
-    /// - Windows: `UInt16` (UTF-16)
-    #if os(Windows)
-        public typealias Char = UInt16
-    #else
-        public typealias Char = CChar
-    #endif
+    /// Aliases `Kernel.Path.Char`, which in turn aliases the canonical
+    /// `String_Primitives.String.Char`:
+    /// - POSIX (macOS, Linux): `UInt8` (UTF-8 code units)
+    /// - Windows: `UInt16` (UTF-16 code units)
+    ///
+    /// Uses pure Swift types, not C interop types (CChar/WCHAR).
+    public typealias Char = Kernel.Path.Char
 
     /// Platform path separator.
     #if os(Windows)
@@ -95,7 +95,7 @@ extension Path {
 }
 
 extension Path.Error: CustomStringConvertible {
-    public var description: String {
+    public var description: Swift.String {
         switch self {
         case .empty:
             return "Path is empty"
@@ -113,19 +113,14 @@ extension Path {
     /// Internal storage for path bytes.
     @usableFromInline
     internal struct Storage: Copyable, Sendable, Hashable {
-        #if os(Windows)
-            /// UTF-16 buffer, null-terminated.
-            @usableFromInline
-            internal var buffer: [UInt16]
-        #else
-            /// UTF-8 buffer, null-terminated.
-            @usableFromInline
-            internal var buffer: [CChar]
-        #endif
+        /// Platform-native code units, null-terminated.
+        /// UTF-8 (`[UInt8]`) on POSIX, UTF-16 (`[UInt16]`) on Windows.
+        @usableFromInline
+        internal var buffer: [Char]
 
         /// Creates storage from a string.
         @usableFromInline
-        internal init(_ string: String) throws(Path.Error) {
+        internal init(_ string: Swift.String) throws(Path.Error) {
             // Check non-empty
             guard !string.isEmpty else {
                 throw Path.Error.empty
@@ -151,7 +146,7 @@ extension Path {
                 self.buffer = buffer
             #else
                 let bytes = string.utf8
-                var buffer: [CChar] = []
+                var buffer: [Char] = []
                 buffer.reserveCapacity(bytes.count + 1)
 
                 for byte in bytes {
@@ -163,7 +158,7 @@ extension Path {
                     if byte < 0x20 || byte == 0x7F {
                         throw Path.Error.containsControlCharacters
                     }
-                    buffer.append(CChar(bitPattern: byte))
+                    buffer.append(byte)  // Char is UInt8 on POSIX
                 }
                 buffer.append(0)  // Null terminator
                 self.buffer = buffer
@@ -197,20 +192,20 @@ extension Path {
     ///
     /// On POSIX, this decodes UTF-8. On Windows, this decodes UTF-16.
     @inlinable
-    public var string: String {
+    public var string: Swift.String {
         #if os(Windows)
             // Exclude null terminator
             let units = _storage.buffer.dropLast()
-            return String(decoding: units, as: UTF16.self)
+            return Swift.String(decoding: units, as: UTF16.self)
         #else
-            // Exclude null terminator
-            let bytes = _storage.buffer.dropLast().map { UInt8(bitPattern: $0) }
-            return String(decoding: bytes, as: UTF8.self)
+            // Exclude null terminator; Char is UInt8 on POSIX
+            let bytes = _storage.buffer.dropLast()
+            return Swift.String(decoding: bytes, as: UTF8.self)
         #endif
     }
 }
 
-extension String {
+extension Swift.String {
     /// Creates a string from a path.
     @inlinable
     public init(_ path: Path) {
@@ -250,27 +245,24 @@ extension Path {
     /// }
     /// ```
     @inlinable
-    public func withKernelPath<R, E: Swift.Error>(
+    public func withKernelPath<R: ~Copyable, E: Swift.Error>(
         _ body: (borrowing Kernel.Path) throws(E) -> R
     ) throws(E) -> R {
-        // Use Result to bridge typed throws across non-typed-throws boundary
-        var result: Result<R, E>!
-        _storage.buffer.withUnsafeBufferPointer { ptr in
-            let kernelPath = Kernel.Path(unsafeCString: ptr.baseAddress!)
-            do throws(E) {
-                result = .success(try body(kernelPath))
-            } catch {
-                result = .failure(error)
-            }
+        // Copy our buffer to create an owned Kernel.Path
+        let count = _storage.count
+        let buffer = UnsafeMutablePointer<Char>.allocate(capacity: count + 1)
+        _storage.buffer.withUnsafeBufferPointer { src in
+            buffer.initialize(from: src.baseAddress!, count: count + 1)
         }
-        return try result.get()
+        let kernelPath = Kernel.Path(adopting: buffer, count: count)
+        return try body(kernelPath)
     }
 }
 
 // MARK: - CustomStringConvertible
 
 extension Path: CustomStringConvertible {
-    public var description: String {
+    public var description: Swift.String {
         string
     }
 }
@@ -278,7 +270,7 @@ extension Path: CustomStringConvertible {
 // MARK: - CustomDebugStringConvertible
 
 extension Path: CustomDebugStringConvertible {
-    public var debugDescription: String {
+    public var debugDescription: Swift.String {
         "Path(\"\(string)\")"
     }
 }
