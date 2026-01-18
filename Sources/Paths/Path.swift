@@ -48,6 +48,38 @@ public struct Path: Copyable, Sendable, Hashable {
         self._storage = try Storage(string)
     }
 
+    /// Creates a path by copying from a span of platform-native code units.
+    ///
+    /// This initializer enables zero-intermediate-allocation patterns when
+    /// constructing a path from borrowed data (e.g., from a syscall buffer).
+    ///
+    /// - Parameter bytes: The path bytes. Must NOT include a NUL terminator.
+    /// - Throws: `Path.Error` if validation fails.
+    public init(copying bytes: Span<Char>) throws(Error) {
+        guard bytes.count > 0 else {
+            throw .empty
+        }
+
+        var buffer: [Char] = []
+        buffer.reserveCapacity(bytes.count + 1)
+
+        for i in 0..<bytes.count {
+            let byte = bytes[i]
+            // Check for interior NUL
+            if byte == 0 {
+                throw .containsInteriorNUL
+            }
+            // Check for control characters (0x00-0x1F, 0x7F)
+            if byte < 0x20 || byte == 0x7F {
+                throw .containsControlCharacters
+            }
+            buffer.append(byte)
+        }
+
+        buffer.append(0)  // NUL terminator
+        self._storage = Storage(buffer: buffer)
+    }
+
     /// Creates a path from validated storage.
     @usableFromInline
     internal init(storage: Storage) {
@@ -238,24 +270,26 @@ extension Path {
     /// This bridges the owned `Path` to the ephemeral `Kernel.Path` required
     /// by kernel primitives.
     ///
+    /// ## Zero-Allocation on POSIX
+    ///
+    /// On POSIX systems, both `Path` and `Kernel.Path` store UTF-8 bytes,
+    /// so this method borrows directly from the internal buffer without allocation.
+    ///
     /// ```swift
     /// let path = try Path("/tmp/file.txt")
-    /// try path.withKernelPath { kernelPath in
-    ///     try Kernel.File.Open.open(path: kernelPath, mode: .read)
+    /// try path.withKernelPath { view in
+    ///     try Kernel.File.Open.open(path: view, mode: .read)
     /// }
     /// ```
     @inlinable
-    public func withKernelPath<R: ~Copyable, E: Swift.Error>(
-        _ body: (borrowing Kernel.Path) throws(E) -> R
+    public func withKernelPath<R, E: Swift.Error>(
+        _ body: (borrowing Kernel.Path.View) throws(E) -> R
     ) throws(E) -> R {
-        // Copy our buffer to create an owned Kernel.Path
-        let count = _storage.count
-        let buffer = UnsafeMutablePointer<Char>.allocate(capacity: count + 1)
-        _storage.buffer.withUnsafeBufferPointer { src in
-            buffer.initialize(from: src.baseAddress!, count: count + 1)
+        // Borrow directly from our internal buffer - zero allocation
+        try _storage.buffer.withUnsafeBufferPointer { src throws(E) in
+            let view = unsafe Kernel.Path.View(src.baseAddress!)
+            return try body(view)
         }
-        let kernelPath = Kernel.Path(adopting: buffer, count: count)
-        return try body(kernelPath)
     }
 }
 
@@ -272,5 +306,28 @@ extension Path: CustomStringConvertible {
 extension Path: CustomDebugStringConvertible {
     public var debugDescription: Swift.String {
         "Path(\"\(string)\")"
+    }
+}
+
+// MARK: - Span Access
+
+extension Path {
+    /// Safe span access to NUL-terminated path bytes.
+    ///
+    /// Returns a span of the entire path buffer including the NUL terminator.
+    /// This span is suitable for passing to Kernel APIs that expect NUL-terminated paths.
+    ///
+    /// - Complexity: O(1) - the span borrows directly from owned storage.
+    ///
+    /// ```swift
+    /// let path = try Path("/tmp/file.txt")
+    /// let stats = try Kernel.File.Stats.get(path: path.bytes)  // Safe - no `unsafe` needed
+    /// ```
+    @inlinable
+    public var bytes: Span<Char> {
+        @_lifetime(borrow self)
+        borrowing get {
+            _storage.buffer.span
+        }
     }
 }

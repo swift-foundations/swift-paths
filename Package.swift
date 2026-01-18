@@ -33,7 +33,9 @@ for target in package.targets where ![.system, .binary, .plugin].contains(target
     let settings: [SwiftSetting] = [
         .enableUpcomingFeature("ExistentialAny"),
         .enableUpcomingFeature("InternalImportsByDefault"),
-        .enableUpcomingFeature("MemberImportVisibility")
+        .enableUpcomingFeature("MemberImportVisibility"),
+        .enableExperimentalFeature("Lifetimes"),
+        .strictMemorySafety(),
     ]
     target.swiftSettings = (target.swiftSettings ?? []) + settings
 }
