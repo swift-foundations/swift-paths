@@ -154,7 +154,7 @@ extension Path.View {
     public borrowing func withKernelPath<R, E: Swift.Error>(
         _ body: (borrowing Kernel.Path.View) throws(E) -> R
     ) throws(E) -> R {
-        let kernelView = unsafe Kernel.Path.View(pointer)
+        let kernelView = unsafe Kernel.Path.View(self.pointer, count: self.length)
         return try body(kernelView)
     }
 }

@@ -92,13 +92,12 @@ public struct Path: Copyable, Sendable, Hashable {
 extension Path {
     /// Platform-native path character type.
     ///
-    /// Aliases `Kernel.Path.Char`, which in turn aliases the canonical
-    /// `String_Primitives.String.Char`:
+    /// Aliases `Path_Primitives.Path.Char`:
     /// - POSIX (macOS, Linux): `UInt8` (UTF-8 code units)
     /// - Windows: `UInt16` (UTF-16 code units)
     ///
     /// Uses pure Swift types, not C interop types (CChar/WCHAR).
-    public typealias Char = Kernel.Path.Char
+    public typealias Char = Path_Primitives.Path.Char
 
     /// Platform path separator.
     #if os(Windows)
@@ -287,7 +286,7 @@ extension Path {
     ) throws(E) -> R {
         // Borrow directly from our internal buffer - zero allocation
         try _storage.buffer.withUnsafeBufferPointer { src throws(E) in
-            let view = unsafe Kernel.Path.View(src.baseAddress!)
+            let view = unsafe Kernel.Path.View(src.baseAddress!, count: src.count - 1)
             return try body(view)
         }
     }
