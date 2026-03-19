@@ -108,53 +108,31 @@ extension Path.View {
     }
 }
 
-// MARK: - Path View Access
+// MARK: - View Property
 
 extension Path {
-    /// Executes a closure with a non-escaping view of this path.
+    /// A non-escaping view of this path.
     ///
-    /// The view borrows from this path and cannot outlive the closure.
-    /// Use this for zero-copy operations that don't need ownership.
-    ///
-    /// ```swift
-    /// let path = try Path("/tmp/file.txt")
-    /// path.withView { view in
-    ///     // Use view for syscalls or comparisons
-    /// }
-    /// ```
+    /// The view borrows from this path and cannot outlive it.
     @inlinable
-    public func withView<R>(
-        _ body: (borrowing View) -> R
-    ) -> R {
-        unsafe _storage.buffer.withUnsafeBufferPointer { ptr in
-            let view = unsafe View(ptr.baseAddress!)
-            return body(view)
-        }
-    }
-
-    /// Executes a throwing closure with a non-escaping view of this path.
-    @inlinable
-    public func withView<R>(
-        _ body: (borrowing View) throws -> R
-    ) throws -> R {
-        try unsafe _storage.buffer.withUnsafeBufferPointer { ptr in
-            let view = unsafe View(ptr.baseAddress!)
-            return try body(view)
+    public var view: View {
+        @_lifetime(borrow self) borrowing get {
+            View(borrowing: self)
         }
     }
 }
 
-// MARK: - Kernel.Path.View Bridge
+// MARK: - Kernel.Path Bridge
 
 extension Path.View {
-    /// Executes a closure with a `Kernel.Path.View` for syscall interop.
+    /// A `Kernel.Path.View` for syscall interop.
     ///
     /// This bridges `Path.View` to `Kernel.Path.View` without allocation.
     @inlinable
-    public borrowing func withKernelPath<R, E: Swift.Error>(
-        _ body: (borrowing Kernel.Path.View) throws(E) -> R
-    ) throws(E) -> R {
-        let kernelView = unsafe Kernel.Path.View(self.pointer, count: self.length)
-        return try body(kernelView)
+    public var kernelPath: Kernel.Path.View {
+        @_lifetime(copy self) borrowing get {
+            let kv = unsafe Kernel.Path.View(self.pointer, count: self.length)
+            return unsafe _overrideLifetime(kv, copying: self)
+        }
     }
 }

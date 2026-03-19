@@ -264,30 +264,18 @@ extension Path {
 // MARK: - Kernel.Path Bridge
 
 extension Path {
-    /// Executes a closure with a borrowed `Kernel.Path` for syscall interop.
-    ///
-    /// This bridges the owned `Path` to the ephemeral `Kernel.Path` required
-    /// by kernel primitives.
+    /// A borrowed `Kernel.Path.View` for syscall interop.
     ///
     /// ## Zero-Allocation on POSIX
     ///
     /// On POSIX systems, both `Path` and `Kernel.Path` store UTF-8 bytes,
-    /// so this method borrows directly from the internal buffer without allocation.
-    ///
-    /// ```swift
-    /// let path = try Path("/tmp/file.txt")
-    /// try path.withKernelPath { view in
-    ///     try Kernel.File.Open.open(path: view, mode: .read)
-    /// }
-    /// ```
+    /// so this property borrows directly from the internal buffer without allocation.
     @inlinable
-    public func withKernelPath<R, E: Swift.Error>(
-        _ body: (borrowing Kernel.Path.View) throws(E) -> R
-    ) throws(E) -> R {
-        // Borrow directly from our internal buffer - zero allocation
-        try _storage.buffer.withUnsafeBufferPointer { src throws(E) in
-            let view = unsafe Kernel.Path.View(src.baseAddress!, count: src.count - 1)
-            return try body(view)
+    public var kernelPath: Kernel.Path.View {
+        @_lifetime(borrow self) borrowing get {
+            let ptr = unsafe _storage.buffer.withUnsafeBufferPointer { $0.baseAddress! }
+            let view = unsafe Kernel.Path.View(ptr, count: _storage.buffer.count - 1)
+            return unsafe _overrideLifetime(view, borrowing: self)
         }
     }
 }
