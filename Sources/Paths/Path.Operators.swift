@@ -12,43 +12,15 @@
 // MARK: - Path Operators
 
 extension Path {
-    /// Appends a string to a path.
-    ///
-    /// The string can be a single component (`"readme.txt"`) or a relative path
-    /// with multiple components (`"Documents/readme.txt"`).
+    /// Appends a component to a path.
     ///
     /// ```swift
     /// let dir = try Path("/Users/coen")
     /// let file = dir / "readme.txt"
     /// print(file.string)  // "/Users/coen/readme.txt"
     ///
-    /// let nested = dir / "Documents/Projects/readme.txt"
-    /// print(nested.string)  // "/Users/coen/Documents/Projects/readme.txt"
-    /// ```
-    ///
-    /// - Precondition: The string must be a valid component or relative path.
-    ///   Passing an absolute path or invalid string is a programmer error.
-    @inlinable
-    public static func / (lhs: Path, rhs: Swift.String) -> Path {
-        // Fast path: try as single component first (common case)
-        if let component = try? Component.init(rhs) {
-            return lhs.appending(component)
-        }
-        // Slow path: parse as relative path (handles "a/b/file.txt")
-        if let relativePath = try? Path.init(rhs), relativePath.isRelative {
-            return lhs.appending(relativePath)
-        }
-        // Absolute path or truly invalid string is programmer error
-        fatalError("Invalid path operand for /: '\(rhs)' - must be a valid component or relative path")
-    }
-
-    /// Appends a component to a path.
-    ///
-    /// ```swift
-    /// let dir = try Path("/Users/coen")
-    /// let component = try Path.Component("readme.txt")
-    /// let file = dir / component
-    /// print(file.string)  // "/Users/coen/readme.txt"
+    /// let nested = dir / "sub" / "path" / "file.txt"
+    /// print(nested.string)  // "/Users/coen/sub/path/file.txt"
     /// ```
     @inlinable
     public static func / (lhs: Path, rhs: Component) -> Path {
@@ -66,6 +38,7 @@ extension Path {
     /// let full = base / rel
     /// print(full.string)  // "/Users/coen/Documents"
     /// ```
+    @_disfavoredOverload
     @inlinable
     public static func / (lhs: Path, rhs: Path) -> Path {
         lhs.appending(rhs)
@@ -126,4 +99,18 @@ extension Path.Component: ExpressibleByStringLiteral {
             fatalError("Invalid path component literal: \(value) (\(error))")
         }
     }
+}
+
+// MARK: - ExpressibleByStringInterpolation for Component
+
+extension Path.Component: ExpressibleByStringInterpolation {
+    /// Creates a component from string interpolation.
+    ///
+    /// - Warning: Crashes at runtime if the resulting string is invalid.
+    ///   For safe construction, use `try Path.Component(_:)`.
+    ///
+    /// ```swift
+    /// let i = 5
+    /// let component: Path.Component = "file-\(i).txt"
+    /// ```
 }

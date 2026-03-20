@@ -170,7 +170,7 @@ extension Path.Component {
     /// print(c3.extension)  // nil (no dot)
     /// ```
     @inlinable
-    public var `extension`: Swift.String? {
+    public var `extension`: Extension? {
         let s = string
         guard let dotIndex = s.lastIndex(of: ".") else {
             return nil
@@ -184,7 +184,7 @@ extension Path.Component {
         if afterDot == s.endIndex {
             return nil
         }
-        return Swift.String(s[afterDot...])
+        return Extension(unchecked: Swift.String(s[afterDot...]))
     }
 
     /// The filename without the extension.
@@ -202,21 +202,21 @@ extension Path.Component {
     /// print(c3.stem)  // "archive.tar"
     /// ```
     @inlinable
-    public var stem: Swift.String {
+    public var stem: Stem {
         let s = string
         guard let dotIndex = s.lastIndex(of: ".") else {
-            return s
+            return Stem(unchecked: s)
         }
         // Dot at start is not an extension
         if dotIndex == s.startIndex {
-            return s
+            return Stem(unchecked: s)
         }
         // Dot at end is not an extension
         let afterDot = s.index(after: dotIndex)
         if afterDot == s.endIndex {
-            return s
+            return Stem(unchecked: s)
         }
-        return Swift.String(s[..<dotIndex])
+        return Stem(unchecked: Swift.String(s[..<dotIndex]))
     }
 }
 

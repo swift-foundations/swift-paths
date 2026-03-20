@@ -80,7 +80,7 @@ extension Path {
     /// print(noExt.extension)  // nil
     /// ```
     @inlinable
-    public var `extension`: Swift.String? {
+    public var `extension`: Component.Extension? {
         get {
             lastComponent?.extension
         }
@@ -89,10 +89,10 @@ extension Path {
             let stem = lastComp.stem
 
             let newName: Swift.String
-            if let ext = newValue, !ext.isEmpty {
-                newName = stem + "." + ext
+            if let ext = newValue {
+                newName = stem.string + "." + ext.string
             } else {
-                newName = stem
+                newName = stem.string
             }
 
             guard let newComponent = try? Component(newName) else { return }
@@ -121,7 +121,7 @@ extension Path {
     /// print(archive.stem)  // "archive.tar"
     /// ```
     @inlinable
-    public var stem: Swift.String? {
+    public var stem: Component.Stem? {
         lastComponent?.stem
     }
 

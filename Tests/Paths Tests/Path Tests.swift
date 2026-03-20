@@ -155,10 +155,18 @@ struct PathTests {
         #expect(newPath.string == "/usr/local")
     }
 
-    @Test("Slash operator with multi-component relative path")
-    func slashOperatorWithMultiComponentPath() throws {
+    @Test("Slash operator with chained components")
+    func slashOperatorWithChainedComponents() throws {
         let dir = try Path("/Users/coen")
-        let nested = dir / "Documents/Projects/readme.txt"
+        let nested = dir / "Documents" / "Projects" / "readme.txt"
+        #expect(nested.string == "/Users/coen/Documents/Projects/readme.txt")
+    }
+
+    @Test("Slash operator with relative path")
+    func slashOperatorWithRelativePath() throws {
+        let dir = try Path("/Users/coen")
+        let rel = try Path("Documents/Projects/readme.txt")
+        let nested = dir / rel
         #expect(nested.string == "/Users/coen/Documents/Projects/readme.txt")
     }
 
