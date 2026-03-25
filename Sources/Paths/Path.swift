@@ -255,8 +255,8 @@ extension Path {
     public func withCString<R, E: Swift.Error>(
         _ body: (UnsafePointer<Char>) throws(E) -> R
     ) throws(E) -> R  {
-        try _storage.buffer.withUnsafeBufferPointer { (ptr) throws(E) in
-            try body(ptr.baseAddress!)
+        try unsafe _storage.buffer.withUnsafeBufferPointer { (ptr) throws(E) in
+            try unsafe body(ptr.baseAddress!)
         }
     }
 }
