@@ -70,33 +70,6 @@ extension Path.Component {
     }
 }
 
-// MARK: - Stem Errors
-
-extension Path.Component.Stem {
-    /// Errors that can occur during stem construction.
-    public enum Error: Swift.Error, Sendable, Equatable {
-        /// The stem string is empty.
-        case empty
-        /// The stem contains a path separator.
-        case containsPathSeparator
-        /// The stem contains ASCII control characters.
-        case containsControlCharacters
-    }
-}
-
-extension Path.Component.Stem.Error: CustomStringConvertible {
-    public var description: Swift.String {
-        switch self {
-        case .empty:
-            return "Stem is empty"
-        case .containsPathSeparator:
-            return "Stem contains path separator"
-        case .containsControlCharacters:
-            return "Stem contains control characters"
-        }
-    }
-}
-
 // MARK: - String Conversion
 
 extension Path.Component.Stem {
