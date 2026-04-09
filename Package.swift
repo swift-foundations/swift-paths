@@ -22,7 +22,7 @@ let package = Package(
         .target(
             name: "Paths",
             dependencies: [
-                .product(name: "Kernel Primitives", package: "swift-kernel-primitives"),
+                .product(name: "Kernel Path Primitives", package: "swift-kernel-primitives"),
                 .product(name: "Binary Primitives", package: "swift-binary-primitives")
             ]
         ),

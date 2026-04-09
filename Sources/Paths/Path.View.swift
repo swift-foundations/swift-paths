@@ -9,7 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Kernel_Primitives
+public import Kernel_Path_Primitives
 
 extension Path {
     /// Non-escapable view of a null-terminated path.

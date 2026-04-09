@@ -9,7 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Kernel_Primitives
+public import Kernel_Path_Primitives
 
 /// A platform-native owned file path.
 ///
