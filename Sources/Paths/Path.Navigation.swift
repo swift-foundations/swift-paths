@@ -270,14 +270,27 @@ extension Path {
             return try? Path.init(".")
         }
 
-        #if os(Windows)
-            let separator = "\\"
-        #else
-            let separator = "/"
-        #endif
+        // Join component buffers directly into a new [Char] with separators,
+        // avoiding N Swift.String decodes + a re-validating Path.init.
+        var total = 0
+        for comp in relativeComponents {
+            total += comp._storage.count
+        }
+        total += relativeComponents.count - 1  // interior separators
 
-        let relativeString = relativeComponents.map(\.string).joined(separator: separator)
-        return try? Path.init(relativeString)
+        var buffer: [Char] = []
+        buffer.reserveCapacity(total + 1)
+        var first = true
+        for comp in relativeComponents {
+            if !first {
+                buffer.append(Self.separator)
+            }
+            first = false
+            let cCount = comp._storage.count
+            buffer.append(contentsOf: comp._storage.buffer[0..<cCount])
+        }
+        buffer.append(0)
+        return Path(storage: Storage(buffer: buffer))
     }
 }
 
