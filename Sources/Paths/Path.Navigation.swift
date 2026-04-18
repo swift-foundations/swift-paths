@@ -232,6 +232,11 @@ extension Path {
     /// Scans `_storage.buffer[0..<count]` in reverse — excluding the trailing NUL.
     /// On POSIX, matches `Self.separator` (0x2F). On Windows, matches either
     /// `Self.separator` (0x5C) or `Self.altSeparator` (0x2F).
+    ///
+    /// Parallel to `Path_Primitives.Path.Scan.lastSeparatorIndex` at L1; Wave 0
+    /// cross-layer equivalence tests enforce byte-level agreement between the
+    /// two implementations. Natural delegation happens at Wave 3 when `Paths.Path`
+    /// conforms to `Path.Navigation` and inherits protocol defaults.
     @usableFromInline
     internal var _lastSeparator: Int? {
         let count = _storage.count
