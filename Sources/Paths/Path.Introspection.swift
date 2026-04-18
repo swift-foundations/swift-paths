@@ -111,13 +111,13 @@ extension Path {
             guard let newComponent = try? Component(newName) else { return }
 
             if let parentPath = parent {
-                if let newPath = try? Path(parentPath.appending(newComponent).string) {
-                    self._storage = newPath._storage
-                }
+                // Direct storage transfer — parentPath.appending already produces
+                // a valid Path; no need to round-trip through Swift.String + Path.init.
+                self._storage = parentPath.appending(newComponent)._storage
             } else {
-                if let newPath = try? Path(newName) {
-                    self._storage = newPath._storage
-                }
+                // No parent — the new path IS just the component. Component's
+                // storage is a valid Path storage (no separators, validated bytes).
+                self._storage = newComponent._storage
             }
         }
     }
