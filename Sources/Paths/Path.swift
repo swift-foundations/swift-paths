@@ -30,7 +30,7 @@ public import Kernel_Path_Primitives
 /// ```swift
 /// let path = try Path("/Users/coen/Documents")
 /// let file = path / "readme.txt"
-/// print(file.lastComponent?.string)  // "readme.txt"
+/// print(file.components.last?.string)  // "readme.txt"
 /// print(file.extension)               // "txt"
 /// print(file.parent)                  // Path("/Users/coen/Documents")
 /// ```

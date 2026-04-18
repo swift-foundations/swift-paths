@@ -42,29 +42,6 @@ extension Path {
     @inlinable
     public var components: Components { Components(self) }
 
-    /// The last component of the path.
-    ///
-    /// Equivalent to `components.last` — kept as a named accessor so
-    /// common-case basename-style use reads as `path.lastComponent`.
-    /// Returns `nil` for root paths or paths with no non-empty segments.
-    /// Trailing separators are ignored (omit-empty semantics), aligned
-    /// with POSIX basename(3), Rust `Path::file_name`, Go `filepath.Base`,
-    /// Python `pathlib.name`, and Apple `NSString.lastPathComponent`.
-    ///
-    /// ```swift
-    /// let path = try Path("/Users/coen/readme.txt")
-    /// print(path.lastComponent?.string)  // "readme.txt"
-    ///
-    /// let trailing = try Path("backup/")
-    /// print(trailing.lastComponent?.string)  // "backup"
-    ///
-    /// let root = try Path("/")
-    /// print(root.lastComponent)  // nil
-    /// ```
-    @inlinable
-    public var lastComponent: Component? {
-        components.last
-    }
 
     /// The parent directory of this path.
     ///

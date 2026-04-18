@@ -95,10 +95,10 @@ extension Path {
     @inlinable
     public var `extension`: Component.Extension? {
         get {
-            lastComponent?.extension
+            components.last?.extension
         }
         set {
-            guard let lastComp = lastComponent else { return }
+            guard let lastComp = components.last else { return }
             let stem = lastComp.stem
 
             let newName: Swift.String
@@ -135,7 +135,7 @@ extension Path {
     /// ```
     @inlinable
     public var stem: Component.Stem? {
-        lastComponent?.stem
+        components.last?.stem
     }
 
     /// The number of path components.

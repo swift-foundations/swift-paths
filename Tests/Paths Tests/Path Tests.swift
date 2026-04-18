@@ -78,16 +78,16 @@ struct PathTests {
         #expect(components == ["Users", "coen", "Documents"])
     }
 
-    @Test("Last component")
-    func lastComponent() throws {
+    @Test("components.last on multi-component path")
+    func componentsLastMulti() throws {
         let path = try Path("/usr/local/bin")
-        #expect(path.lastComponent?.string == "bin")
+        #expect(path.components.last?.string == "bin")
     }
 
-    @Test("Last component of single component path")
-    func lastComponentOfSingleComponent() throws {
+    @Test("components.last on single-component path")
+    func componentsLastSingle() throws {
         let path = try Path("file.txt")
-        #expect(path.lastComponent?.string == "file.txt")
+        #expect(path.components.last?.string == "file.txt")
     }
 
     // MARK: - Introspection
@@ -227,12 +227,11 @@ struct PathTests {
 
     // MARK: - Components lazy view
 
-    @Test("components.last matches byte-scan lastComponent")
-    func componentsLastMatchesLastComponent() throws {
-        for raw in ["/foo/bar", "foo/bar/baz", "/usr/local/bin/ls", "foo", "/foo/", "foo/"] {
-            let path = try Path(raw)
-            #expect(path.components.last == path.lastComponent, "mismatch on \(raw)")
-        }
+    @Test("components.last with trailing separator omits empty")
+    func componentsLastTrailingSeparator() throws {
+        #expect(try Path("backup/").components.last?.string == "backup")
+        #expect(try Path("/foo/").components.last?.string == "foo")
+        #expect(try Path("/").components.last == nil)
     }
 
     @Test("components.first returns the first non-empty segment")
