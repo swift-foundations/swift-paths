@@ -74,17 +74,8 @@ import Kernel_Core
                 }
             }
 
-            // L3 parent via Phase 4b byte-scan. `.bytes` includes NUL, so
-            // exclude the last element to compare content-only.
-            let l3Bytes: [UInt8]? = l3.parent.map { parent in
-                let span = parent.bytes
-                var bytes: [UInt8] = []
-                bytes.reserveCapacity(span.count - 1)
-                for i in 0..<(span.count - 1) {
-                    bytes.append(span[i])
-                }
-                return bytes
-            }
+            // L3 parent via Phase 4b byte-scan.
+            let l3Bytes: [UInt8]? = l3.parent.map { Self.contentBytes(of: $0) }
 
             #expect(
                 l1Bytes == l3Bytes,
@@ -96,11 +87,96 @@ import Kernel_Core
             )
         }
 
+        // MARK: - appending(Path) — relative-other only
+        //
+        // L3 `appending(Path)` short-circuits when `other.isAbsolute`,
+        // returning `other` unchanged. L1 `Path.Protocol.appending` has
+        // no such short-circuit — it concatenates unconditionally,
+        // producing a doubled-separator path. This is intentional
+        // divergence at the L3 layer, so the equivalence test restricts
+        // to relative-other fixtures where both layers agree.
+
+        /// Relative-other fixtures for `appending(Path)`. Covers trailing
+        /// separator on base (dedup case), root base, nested other.
+        static let appendingFixtures: [AppendingFixture] = [
+            .init(base: "/Users", other: "coen"),
+            .init(base: "/Users", other: "coen/Documents"),
+            .init(base: "foo", other: "bar"),
+            .init(base: "/Users/", other: "coen"),
+            .init(base: "foo/", other: "bar"),
+            .init(base: "/", other: "foo"),
+            .init(base: "/a", other: "b/c/d"),
+            .init(base: "a/b", other: "c/d"),
+        ]
+
+        @Test("appending(Path) relative content-bytes agree", arguments: appendingFixtures)
+        func appendingPathRelativeEquivalence(fixture: AppendingFixture) throws {
+            let base = try Path(fixture.base)
+            let other = try Path(fixture.other)
+
+            // L3 result via Phase 4b byte-scan.
+            let l3Result = base.appending(other)
+            let l3Bytes = Self.contentBytes(of: l3Result)
+
+            // L1 result: concat via Path.Protocol on kernel views, then
+            // iterate the owned Path's .bytes (L1 convention: excludes NUL).
+            var l1Bytes: [UInt8] = []
+            do {
+                let baseView = base.kernelPath
+                let otherView = other.kernelPath
+                let l1Path = baseView.appending(otherView)
+                let span = l1Path.bytes
+                l1Bytes.reserveCapacity(span.count)
+                for i in 0..<span.count {
+                    l1Bytes.append(span[i])
+                }
+            }
+
+            #expect(
+                l1Bytes == l3Bytes,
+                """
+                "\(fixture.base)" + "\(fixture.other)" disagrees:
+                  L1 = \(Self.format(l1Bytes))
+                  L3 = \(Self.format(l3Bytes))
+                """
+            )
+        }
+
         // MARK: - Helpers
+
+        /// Extract content bytes (excluding NUL) from an owned `Paths.Path`.
+        ///
+        /// L3's `.bytes` includes NUL per its syscall-hand-off convention;
+        /// this helper slices it off to align with L1's "content length" semantics.
+        ///
+        /// The parameter type is qualified because `Kernel_Core` re-exports
+        /// `Path_Primitives.Path` via the platform stack, making bare `Path`
+        /// ambiguous in type position.
+        static func contentBytes(of path: Paths.Path) -> [UInt8] {
+            let span = path.bytes
+            var bytes: [UInt8] = []
+            bytes.reserveCapacity(span.count - 1)
+            for i in 0..<(span.count - 1) {
+                bytes.append(span[i])
+            }
+            return bytes
+        }
 
         static func format(_ bytes: [UInt8]?) -> Swift.String {
             guard let bytes else { return "nil" }
             return "\"\(Swift.String(decoding: bytes, as: UTF8.self))\""
         }
+
+        static func format(_ bytes: [UInt8]) -> Swift.String {
+            "\"\(Swift.String(decoding: bytes, as: UTF8.self))\""
+        }
+    }
+
+    /// Fixture pair for `appending(Path)` equivalence tests.
+    struct AppendingFixture: Sendable, CustomStringConvertible {
+        let base: Swift.String
+        let other: Swift.String
+
+        var description: Swift.String { "\"\(base)\" + \"\(other)\"" }
     }
 #endif
