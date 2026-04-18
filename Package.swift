@@ -16,7 +16,8 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../../swift-primitives/swift-kernel-primitives"),
-        .package(path: "../../swift-primitives/swift-binary-primitives")
+        .package(path: "../../swift-primitives/swift-binary-primitives"),
+        .package(path: "../swift-kernel")
     ],
     targets: [
         .target(
@@ -30,6 +31,7 @@ let package = Package(
             name: "Paths Tests",
             dependencies: [
                 "Paths",
+                .product(name: "Kernel Core", package: "swift-kernel")
             ]
         ),
     ]
