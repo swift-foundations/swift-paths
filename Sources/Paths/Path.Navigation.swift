@@ -14,8 +14,9 @@
 extension Path {
     /// The components of this path.
     ///
-    /// Components are the parts between path separators.
-    /// An absolute path starts with an empty component representing the root.
+    /// Components are the parts between path separators. Empty segments
+    /// (runs of separators) are omitted. On Windows both `/` and `\` are
+    /// recognized as separators.
     ///
     /// ```swift
     /// let path = try Path("/Users/coen/Documents")
@@ -27,40 +28,94 @@ extension Path {
     /// ```
     @inlinable
     public var components: [Component] {
-        let s = string
-        guard !s.isEmpty else { return [] }
+        let count = _storage.count
+        guard count > 0 else { return [] }
 
-        #if os(Windows)
-            // Split on both / and \
-            let parts = s.split(omittingEmptySubsequences: true) { char in
-                char == "/" || char == "\\"
+        var result: [Component] = []
+        var segmentStart = 0
+        var inSegment = false
+
+        for i in 0..<count {
+            let byte = _storage.buffer[i]
+            let isSeparator: Bool
+            #if os(Windows)
+                isSeparator = byte == Self.separator || byte == Self.altSeparator
+            #else
+                isSeparator = byte == Self.separator
+            #endif
+
+            if isSeparator {
+                if inSegment {
+                    result.append(
+                        Component(storage: Storage(copying: _storage.buffer[segmentStart..<i]))
+                    )
+                    inSegment = false
+                }
+            } else if !inSegment {
+                segmentStart = i
+                inSegment = true
             }
-            return parts.compactMap { part in
-                try? Component.init(Swift.String(part))
-            }
-        #else
-            // Split on /
-            let parts = s.split(separator: "/", omittingEmptySubsequences: true)
-            return parts.compactMap { part in
-                try? Component.init(Swift.String(part))
-            }
-        #endif
+        }
+        if inSegment {
+            result.append(
+                Component(storage: Storage(copying: _storage.buffer[segmentStart..<count]))
+            )
+        }
+        return result
     }
 
     /// The last component of the path (filename or final directory).
     ///
-    /// Returns `nil` for root paths or paths with no components.
+    /// Returns `nil` for root paths or paths with no components. Trailing
+    /// separators are ignored (omit-empty semantics) — `"foo/bar/"` yields
+    /// `Component("bar")`, aligned with POSIX basename(3), Rust `Path::file_name`,
+    /// Go `filepath.Base`, Python `pathlib.name`, and Apple `NSString.lastPathComponent`.
     ///
     /// ```swift
     /// let path = try Path("/Users/coen/readme.txt")
     /// print(path.lastComponent?.string)  // "readme.txt"
+    ///
+    /// let trailing = try Path("backup/")
+    /// print(trailing.lastComponent?.string)  // "backup"
     ///
     /// let root = try Path("/")
     /// print(root.lastComponent)  // nil
     /// ```
     @inlinable
     public var lastComponent: Component? {
-        components.last
+        let count = _storage.count
+        guard count > 0 else { return nil }
+
+        // Walk backward past any trailing separators.
+        var end = count
+        while end > 0 {
+            let byte = _storage.buffer[end - 1]
+            let isSeparator: Bool
+            #if os(Windows)
+                isSeparator = byte == Self.separator || byte == Self.altSeparator
+            #else
+                isSeparator = byte == Self.separator
+            #endif
+            if !isSeparator { break }
+            end -= 1
+        }
+        guard end > 0 else { return nil }
+
+        // Walk backward to the preceding separator (or buffer start).
+        var start = end
+        while start > 0 {
+            let byte = _storage.buffer[start - 1]
+            let isSeparator: Bool
+            #if os(Windows)
+                isSeparator = byte == Self.separator || byte == Self.altSeparator
+            #else
+                isSeparator = byte == Self.separator
+            #endif
+            if isSeparator { break }
+            start -= 1
+        }
+
+        return Component(storage: Storage(copying: _storage.buffer[start..<end]))
     }
 
     /// The parent directory of this path.
@@ -180,7 +235,9 @@ extension Path {
         }
 
         for (i, otherComp) in otherComponents.enumerated() {
-            if selfComponents[i].string != otherComp.string {
+            // Byte-level equality via Component's Hashable/Equatable conformance,
+            // avoiding a Swift.String decode per comparison.
+            if selfComponents[i] != otherComp {
                 return false
             }
         }
