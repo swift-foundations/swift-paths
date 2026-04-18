@@ -275,7 +275,11 @@ extension Path {
     /// Safe span access to NUL-terminated path bytes.
     ///
     /// Returns a span of the entire path buffer including the NUL terminator.
-    /// This span is suitable for passing to Kernel APIs that expect NUL-terminated paths.
+    /// This span is suitable for passing to Kernel APIs that expect NUL-terminated paths
+    /// (the raw-storage view per SE-0456 convention).
+    ///
+    /// For the content-only view (excluding NUL, aligned with the L1
+    /// `Path_Primitives.Path.content` convention), use `.content`.
     ///
     /// - Complexity: O(1) - the span borrows directly from owned storage.
     ///
@@ -288,6 +292,24 @@ extension Path {
         @_lifetime(borrow self)
         borrowing get {
             _storage.buffer.span
+        }
+    }
+
+    /// Safe span access to path content, excluding the NUL terminator.
+    ///
+    /// Returns a span of the path's semantic content — the meaningful bytes
+    /// without the storage-framing NUL. Cross-layer consistent with L1
+    /// `Path_Primitives.Path.content`.
+    ///
+    /// For the NUL-including raw-storage view suitable for syscall hand-off,
+    /// use `.bytes`.
+    ///
+    /// - Complexity: O(1) - sub-span of owned storage.
+    @inlinable
+    public var content: Span<Char> {
+        @_lifetime(borrow self)
+        borrowing get {
+            _storage.buffer.span.extracting(0..<_storage.count)
         }
     }
 }

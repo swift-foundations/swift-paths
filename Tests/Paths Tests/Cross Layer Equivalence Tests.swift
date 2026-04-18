@@ -129,13 +129,13 @@ import Kernel_Core
             let l3Bytes = Self.contentBytes(of: l3Result)
 
             // L1 result: concat via Path.Protocol on kernel views, then
-            // iterate the owned Path's .bytes (L1 convention: excludes NUL).
+            // iterate the owned Path's .content (L1 convention: excludes NUL).
             var l1Bytes: [UInt8] = []
             do {
                 let baseView = base.kernelPath
                 let otherView = other.kernelPath
                 let l1Path = baseView.appending(otherView)
-                let span = l1Path.bytes
+                let span = l1Path.content
                 l1Bytes.reserveCapacity(span.count)
                 for i in 0..<span.count {
                     l1Bytes.append(span[i])
