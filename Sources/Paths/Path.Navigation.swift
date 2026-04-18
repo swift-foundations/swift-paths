@@ -12,64 +12,44 @@
 // MARK: - Path Components
 
 extension Path {
-    /// The components of this path.
+    /// A lazy view over the path's components.
     ///
-    /// Components are the parts between path separators. Empty segments
-    /// (runs of separators) are omitted. On Windows both `/` and `\` are
-    /// recognized as separators.
+    /// Components are the segments between path separators, with empty
+    /// segments (runs of separators) omitted. On Windows, both `/` and `\`
+    /// are recognized as separators.
+    ///
+    /// The returned value is a `BidirectionalCollection` — iteration,
+    /// `.last`, `.first`, subscript, and `.count` all work without
+    /// pre-materializing an `Array<Component>`. Each access builds the
+    /// requested Component lazily via byte scanning over `_storage.buffer`.
     ///
     /// ```swift
     /// let path = try Path("/Users/coen/Documents")
     /// print(path.components.map(\.string))
     /// // ["Users", "coen", "Documents"]
     ///
+    /// print(path.components.last?.string)  // "Documents" — O(k), 1 alloc
+    ///
+    /// let trailing = try Path("backup/")
+    /// print(trailing.components.last?.string)  // "backup"
+    ///
     /// let winPath = try Path("C:\\Users\\coen")  // Windows
     /// // ["C:", "Users", "coen"]
     /// ```
-    @inlinable
-    public var components: [Component] {
-        let count = _storage.count
-        guard count > 0 else { return [] }
-
-        var result: [Component] = []
-        var segmentStart = 0
-        var inSegment = false
-
-        for i in 0..<count {
-            let byte = _storage.buffer[i]
-            let isSeparator: Bool
-            #if os(Windows)
-                isSeparator = byte == Self.separator || byte == Self.altSeparator
-            #else
-                isSeparator = byte == Self.separator
-            #endif
-
-            if isSeparator {
-                if inSegment {
-                    result.append(
-                        Component(storage: Storage(copying: _storage.buffer[segmentStart..<i]))
-                    )
-                    inSegment = false
-                }
-            } else if !inSegment {
-                segmentStart = i
-                inSegment = true
-            }
-        }
-        if inSegment {
-            result.append(
-                Component(storage: Storage(copying: _storage.buffer[segmentStart..<count]))
-            )
-        }
-        return result
-    }
-
-    /// The last component of the path (filename or final directory).
     ///
-    /// Returns `nil` for root paths or paths with no components. Trailing
-    /// separators are ignored (omit-empty semantics) — `"foo/bar/"` yields
-    /// `Component("bar")`, aligned with POSIX basename(3), Rust `Path::file_name`,
-    /// Go `filepath.Base`, Python `pathlib.name`, and Apple `NSString.lastPathComponent`.
+    /// - Complexity: `O(1)` for the view; each access is `O(k)` where `k`
+    ///   is the distance scanned plus the component length.
+    @inlinable
+    public var components: Components { Components(self) }
+
+    /// The last component of the path.
+    ///
+    /// Equivalent to `components.last` — kept as a named accessor so
+    /// common-case basename-style use reads as `path.lastComponent`.
+    /// Returns `nil` for root paths or paths with no non-empty segments.
+    /// Trailing separators are ignored (omit-empty semantics), aligned
+    /// with POSIX basename(3), Rust `Path::file_name`, Go `filepath.Base`,
+    /// Python `pathlib.name`, and Apple `NSString.lastPathComponent`.
     ///
     /// ```swift
     /// let path = try Path("/Users/coen/readme.txt")
@@ -83,39 +63,7 @@ extension Path {
     /// ```
     @inlinable
     public var lastComponent: Component? {
-        let count = _storage.count
-        guard count > 0 else { return nil }
-
-        // Walk backward past any trailing separators.
-        var end = count
-        while end > 0 {
-            let byte = _storage.buffer[end - 1]
-            let isSeparator: Bool
-            #if os(Windows)
-                isSeparator = byte == Self.separator || byte == Self.altSeparator
-            #else
-                isSeparator = byte == Self.separator
-            #endif
-            if !isSeparator { break }
-            end -= 1
-        }
-        guard end > 0 else { return nil }
-
-        // Walk backward to the preceding separator (or buffer start).
-        var start = end
-        while start > 0 {
-            let byte = _storage.buffer[start - 1]
-            let isSeparator: Bool
-            #if os(Windows)
-                isSeparator = byte == Self.separator || byte == Self.altSeparator
-            #else
-                isSeparator = byte == Self.separator
-            #endif
-            if isSeparator { break }
-            start -= 1
-        }
-
-        return Component(storage: Storage(copying: _storage.buffer[start..<end]))
+        components.last
     }
 
     /// The parent directory of this path.
@@ -230,18 +178,15 @@ extension Path {
         let selfComponents = components
         let otherComponents = other.components
 
-        guard otherComponents.count <= selfComponents.count else {
-            return false
+        // Iterator-based comparison: walks both lazy Components in lockstep.
+        // Using `.enumerated()` + subscript would be incorrect because
+        // Components' Index is a byte position, not an element offset.
+        var selfIter = selfComponents.makeIterator()
+        var otherIter = otherComponents.makeIterator()
+        while let otherComp = otherIter.next() {
+            guard let selfComp = selfIter.next() else { return false }
+            if selfComp != otherComp { return false }
         }
-
-        for (i, otherComp) in otherComponents.enumerated() {
-            // Byte-level equality via Component's Hashable/Equatable conformance,
-            // avoiding a Swift.String decode per comparison.
-            if selfComponents[i] != otherComp {
-                return false
-            }
-        }
-
         return true
     }
 
@@ -257,31 +202,37 @@ extension Path {
     /// ```
     @inlinable
     public func relative(to base: Path) -> Path? {
-        guard hasPrefix(base) else {
-            return nil
+        // Walk both components in lockstep; verify prefix match and collect
+        // the remainder of self in one pass. `Components` iterators are lazy
+        // over the byte buffer, so no intermediate arrays materialize.
+        var selfIter = components.makeIterator()
+        var baseIter = base.components.makeIterator()
+        while let baseComp = baseIter.next() {
+            guard let selfComp = selfIter.next(), selfComp == baseComp else {
+                return nil
+            }
         }
 
-        let selfComponents = components
-        let baseComponents = base.components
-
-        let relativeComponents = selfComponents.dropFirst(baseComponents.count)
-
-        if relativeComponents.isEmpty {
+        // baseIter exhausted; whatever remains in selfIter is the relative path.
+        var remainder: [Component] = []
+        while let comp = selfIter.next() {
+            remainder.append(comp)
+        }
+        if remainder.isEmpty {
             return try? Path.init(".")
         }
 
-        // Join component buffers directly into a new [Char] with separators,
-        // avoiding N Swift.String decodes + a re-validating Path.init.
+        // Join remainder component buffers directly with Self.separator.
         var total = 0
-        for comp in relativeComponents {
+        for comp in remainder {
             total += comp._storage.count
         }
-        total += relativeComponents.count - 1  // interior separators
+        total += remainder.count - 1  // interior separators
 
         var buffer: [Char] = []
         buffer.reserveCapacity(total + 1)
         var first = true
-        for comp in relativeComponents {
+        for comp in remainder {
             if !first {
                 buffer.append(Self.separator)
             }
@@ -297,33 +248,72 @@ extension Path {
 // MARK: - Byte-Scanning Helpers
 
 extension Path {
-    /// Index of the last path separator in the content bytes, or `nil` if none.
+    /// Returns true if `byte` is a platform path separator.
     ///
-    /// Scans `_storage.buffer[0..<count]` in reverse — excluding the trailing NUL.
-    /// On POSIX, matches `Self.separator` (0x2F). On Windows, matches either
-    /// `Self.separator` (0x5C) or `Self.altSeparator` (0x2F).
-    ///
-    /// Parallel to `Path_Primitives.Path.Scan.lastSeparatorIndex` at L1; Wave 0
-    /// cross-layer equivalence tests enforce byte-level agreement between the
-    /// two implementations. Natural delegation happens at Wave 3 when `Paths.Path`
-    /// conforms to `Path.Navigation` and inherits protocol defaults.
+    /// On POSIX, `Self.separator` (0x2F). On Windows, `Self.separator` (0x5C)
+    /// or `Self.altSeparator` (0x2F).
+    @inlinable
+    internal static func _isSeparator(_ byte: Char) -> Bool {
+        #if os(Windows)
+            return byte == Self.separator || byte == Self.altSeparator
+        #else
+            return byte == Self.separator
+        #endif
+    }
+
+    /// First separator position at or after `start`, or `nil` if none.
     @usableFromInline
-    internal var _lastSeparator: Int? {
+    internal func _firstSeparator(from start: Int) -> Int? {
         let count = _storage.count
-        var i = count - 1
+        var i = start
+        while i < count {
+            if Self._isSeparator(_storage.buffer[i]) { return i }
+            i += 1
+        }
+        return nil
+    }
+
+    /// First non-separator position at or after `start`, or `_storage.count` if none.
+    @usableFromInline
+    internal func _firstNonSeparator(from start: Int) -> Int {
+        let count = _storage.count
+        var i = start
+        while i < count {
+            if !Self._isSeparator(_storage.buffer[i]) { return i }
+            i += 1
+        }
+        return count
+    }
+
+    /// Last separator position in `[0, end)`, or `nil` if none.
+    @usableFromInline
+    internal func _lastSeparator(before end: Int) -> Int? {
+        var i = end - 1
         while i >= 0 {
-            let byte = _storage.buffer[i]
-            if byte == Self.separator {
-                return i
-            }
-            #if os(Windows)
-                if byte == Self.altSeparator {
-                    return i
-                }
-            #endif
+            if Self._isSeparator(_storage.buffer[i]) { return i }
             i -= 1
         }
         return nil
+    }
+
+    /// `j + 1` where `j` is the last non-separator position in `[0, end)`;
+    /// `0` if no non-separator exists.
+    @usableFromInline
+    internal func _lastNonSeparator(before end: Int) -> Int {
+        var i = end - 1
+        while i >= 0 {
+            if !Self._isSeparator(_storage.buffer[i]) { return i + 1 }
+            i -= 1
+        }
+        return 0
+    }
+
+    /// Index of the last path separator in the content bytes, or `nil` if none.
+    ///
+    /// Convenience for `_lastSeparator(before: _storage.count)`. Used by `parent`.
+    @usableFromInline
+    internal var _lastSeparator: Int? {
+        _lastSeparator(before: _storage.count)
     }
 }
 

@@ -170,6 +170,91 @@ struct PathTests {
         #expect(nested.string == "/Users/coen/Documents/Projects/readme.txt")
     }
 
+    // MARK: - hasPrefix
+
+    @Test("hasPrefix returns true for proper prefix")
+    func hasPrefixProper() throws {
+        let path = try Path("/Users/coen/Documents")
+        #expect(path.hasPrefix(try Path("/Users")))
+        #expect(path.hasPrefix(try Path("/Users/coen")))
+        #expect(path.hasPrefix(try Path("/Users/coen/Documents")))
+    }
+
+    @Test("hasPrefix returns false for mismatch")
+    func hasPrefixMismatch() throws {
+        let path = try Path("/Users/coen/Documents")
+        #expect(!path.hasPrefix(try Path("/var")))
+        #expect(!path.hasPrefix(try Path("/Users/bob")))
+    }
+
+    @Test("hasPrefix returns false when other is longer")
+    func hasPrefixLongerOther() throws {
+        let path = try Path("/Users")
+        #expect(!path.hasPrefix(try Path("/Users/coen/Documents")))
+    }
+
+    @Test("hasPrefix with relative paths")
+    func hasPrefixRelative() throws {
+        let path = try Path("foo/bar/baz")
+        #expect(path.hasPrefix(try Path("foo")))
+        #expect(path.hasPrefix(try Path("foo/bar")))
+        #expect(!path.hasPrefix(try Path("bar")))
+    }
+
+    // MARK: - relative(to:)
+
+    @Test("relative(to:) strips the base prefix")
+    func relativeStripsPrefix() throws {
+        let full = try Path("/Users/coen/Documents/file.txt")
+        let base = try Path("/Users/coen")
+        let rel = full.relative(to: base)
+        #expect(rel?.string == "Documents/file.txt")
+    }
+
+    @Test("relative(to:) returns `.` for equal paths")
+    func relativeEqualPaths() throws {
+        let p = try Path("/Users/coen")
+        let rel = p.relative(to: p)
+        #expect(rel?.string == ".")
+    }
+
+    @Test("relative(to:) returns nil when base isn't a prefix")
+    func relativeNonPrefix() throws {
+        let full = try Path("/Users/coen/Documents")
+        let base = try Path("/var/log")
+        #expect(full.relative(to: base) == nil)
+    }
+
+    // MARK: - Components lazy view
+
+    @Test("components.last matches byte-scan lastComponent")
+    func componentsLastMatchesLastComponent() throws {
+        for raw in ["/foo/bar", "foo/bar/baz", "/usr/local/bin/ls", "foo", "/foo/", "foo/"] {
+            let path = try Path(raw)
+            #expect(path.components.last == path.lastComponent, "mismatch on \(raw)")
+        }
+    }
+
+    @Test("components.first returns the first non-empty segment")
+    func componentsFirst() throws {
+        #expect(try Path("/foo/bar").components.first?.string == "foo")
+        #expect(try Path("//foo").components.first?.string == "foo")
+        #expect(try Path("foo/bar").components.first?.string == "foo")
+    }
+
+    @Test("components iteration omits empty segments")
+    func componentsIterationOmitsEmpty() throws {
+        let path = try Path("/foo//bar/")
+        let names = path.components.map(\.string)
+        #expect(names == ["foo", "bar"])
+    }
+
+    @Test("components.count matches eager materialization")
+    func componentsCount() throws {
+        let path = try Path("/a/b/c/d/e")
+        #expect(path.components.count == 5)
+    }
+
     // MARK: - Protocols
 
     @Test("ExpressibleByStringLiteral")
