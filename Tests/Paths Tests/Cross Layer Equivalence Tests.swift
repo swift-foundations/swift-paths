@@ -55,7 +55,17 @@ import Kernel_Core
             "../foo",
         ]
 
-        @Test("parent content-bytes agree", arguments: fixtures)
+        /// Seeded pseudo-random fixtures. Generated once at load time via a
+        /// SplitMix64 PRNG for reproducibility. Covers paths the hand-written
+        /// set does not anticipate (runs of separators, non-ASCII printable
+        /// bytes, long paths, paths with separators at varied positions).
+        static let generatedFixtures: [Swift.String] = Self.generatePaths(count: 100, seed: 0xDEAD_BEEF_CAFE_BABE)
+
+        /// Combined fixture set. Fixed fixtures provide readable regression
+        /// anchors; generated fixtures provide stochastic coverage.
+        static let allFixtures: [Swift.String] = fixtures + generatedFixtures
+
+        @Test("parent content-bytes agree", arguments: allFixtures)
         func parentEquivalence(fixture: Swift.String) throws {
             let l3 = try Path(fixture)
 
@@ -170,6 +180,41 @@ import Kernel_Core
         static func format(_ bytes: [UInt8]) -> Swift.String {
             "\"\(Swift.String(decoding: bytes, as: UTF8.self))\""
         }
+
+        // MARK: - Generator
+
+        /// Generates `count` pseudo-random valid path strings using a
+        /// SplitMix64 PRNG seeded at `seed` for reproducibility.
+        ///
+        /// Bytes are drawn from the ASCII printable range (0x20-0x7E),
+        /// with `/` (0x2F) weighted at ~25% to ensure separator coverage.
+        /// Length varies in [1, 64]. The result satisfies `Paths.Path`
+        /// validation (non-empty, no control chars, no interior NUL).
+        static func generatePaths(count: Int, seed: UInt64) -> [Swift.String] {
+            var rng = SplitMix64(seed: seed)
+            var result: [Swift.String] = []
+            result.reserveCapacity(count)
+            for _ in 0..<count {
+                let length = Int(rng.next() % 64) + 1
+                var bytes: [UInt8] = []
+                bytes.reserveCapacity(length)
+                for _ in 0..<length {
+                    let roll = rng.next() % 4
+                    if roll == 0 {
+                        bytes.append(0x2F)  // '/'
+                    } else {
+                        // Printable ASCII excluding 0x2F (handled above)
+                        // and excluding 0x20-0x2E (avoids spaces / dots / dashes
+                        // at byte boundaries that would bias toward short
+                        // components). Range 0x30-0x7E is digits + letters +
+                        // symbols.
+                        bytes.append(UInt8(rng.next() % 79) + 0x30)
+                    }
+                }
+                result.append(Swift.String(decoding: bytes, as: UTF8.self))
+            }
+            return result
+        }
     }
 
     /// Fixture pair for `appending(Path)` equivalence tests.
@@ -178,5 +223,28 @@ import Kernel_Core
         let other: Swift.String
 
         var description: Swift.String { "\"\(base)\" + \"\(other)\"" }
+    }
+
+    // MARK: - SplitMix64 PRNG
+
+    /// Seeded 64-bit PRNG for reproducible fixture generation.
+    ///
+    /// SplitMix64 is the seeding generator used by xoshiro family PRNGs; it's
+    /// small, fast, and has good statistical properties for test-data use.
+    /// Not cryptographically secure; not for production use.
+    struct SplitMix64 {
+        private var state: UInt64
+
+        init(seed: UInt64) {
+            self.state = seed
+        }
+
+        mutating func next() -> UInt64 {
+            state = state &+ 0x9E37_79B9_7F4A_7C15
+            var z = state
+            z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
+            z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
+            return z ^ (z >> 31)
+        }
     }
 #endif
