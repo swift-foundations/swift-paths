@@ -24,28 +24,41 @@ extension Path {
     /// let rel = try Path("Documents/file.txt")
     /// print(rel.isAbsolute)  // false
     /// ```
+    ///
+    /// On Windows, drive-letter detection restricts to ASCII `A-Z` / `a-z`
+    /// (byte-level check). This matches the Win32 drive-letter specification
+    /// and is slightly stricter than the previous `Character.isLetter`
+    /// implementation, which admitted any Unicode letter.
     @inlinable
     public var isAbsolute: Bool {
-        let s = string
-        guard !s.isEmpty else { return false }
+        let count = _storage.count
+        guard count > 0 else { return false }
 
         #if os(Windows)
-            // UNC path: \\server\share
-            if s.hasPrefix("\\\\") || s.hasPrefix("//") {
-                return true
+            // UNC prefix: two consecutive separators (\\server or //server).
+            if count >= 2 {
+                let b0 = _storage.buffer[0]
+                let b1 = _storage.buffer[1]
+                if (b0 == Self.separator && b1 == Self.separator)
+                    || (b0 == Self.altSeparator && b1 == Self.altSeparator)
+                {
+                    return true
+                }
             }
-            // Drive letter: C:\ or C:/
-            if s.count >= 3 {
-                let first = s.first!
-                let second = s[s.index(after: s.startIndex)]
-                let third = s[s.index(s.startIndex, offsetBy: 2)]
-                if (first.isLetter && second == ":" && (third == "\\" || third == "/")) {
+            // Drive letter: ASCII [A-Za-z] ':' separator
+            if count >= 3 {
+                let b0 = _storage.buffer[0]
+                let isLetter = (b0 >= 0x41 && b0 <= 0x5A) || (b0 >= 0x61 && b0 <= 0x7A)
+                let isColon = _storage.buffer[1] == 0x3A
+                let b2 = _storage.buffer[2]
+                let isSep = b2 == Self.separator || b2 == Self.altSeparator
+                if isLetter && isColon && isSep {
                     return true
                 }
             }
             return false
         #else
-            return s.hasPrefix("/")
+            return _storage.buffer[0] == Self.separator
         #endif
     }
 
@@ -138,11 +151,13 @@ extension Path {
     /// Whether this path ends with a path separator.
     @inlinable
     public var endsWithSeparator: Bool {
-        let s = string
+        let count = _storage.count
+        guard count > 0 else { return false }
+        let last = _storage.buffer[count - 1]
         #if os(Windows)
-            return s.hasSuffix("/") || s.hasSuffix("\\")
+            return last == Self.separator || last == Self.altSeparator
         #else
-            return s.hasSuffix("/")
+            return last == Self.separator
         #endif
     }
 
@@ -152,26 +167,42 @@ extension Path {
     /// - **Windows:** "C:\", "D:\", "\\server\share" are roots
     @inlinable
     public var isRoot: Bool {
-        let s = string
+        let count = _storage.count
 
         #if os(Windows)
-            // UNC root: \\server\share (but no further path)
-            if s.hasPrefix("\\\\") || s.hasPrefix("//") {
-                let withoutPrefix = s.dropFirst(2)
-                // Count separators after the prefix
-                let separatorCount = withoutPrefix.filter { $0 == "/" || $0 == "\\" }.count
-                return separatorCount <= 1
+            // UNC root: \\server or //server with at most one further separator.
+            if count >= 2 {
+                let b0 = _storage.buffer[0]
+                let b1 = _storage.buffer[1]
+                let isUNCPrefix =
+                    (b0 == Self.separator && b1 == Self.separator)
+                    || (b0 == Self.altSeparator && b1 == Self.altSeparator)
+                if isUNCPrefix {
+                    var extraSeparators = 0
+                    var i = 2
+                    while i < count {
+                        let b = _storage.buffer[i]
+                        if b == Self.separator || b == Self.altSeparator {
+                            extraSeparators += 1
+                            if extraSeparators > 1 { return false }
+                        }
+                        i += 1
+                    }
+                    return true
+                }
             }
-            // Drive root: C:\ or C:/
-            if s.count == 3 {
-                let first = s.first!
-                let second = s[s.index(after: s.startIndex)]
-                let third = s[s.index(s.startIndex, offsetBy: 2)]
-                return first.isLetter && second == ":" && (third == "\\" || third == "/")
+            // Drive root: ASCII [A-Za-z] ':' separator — exactly 3 bytes.
+            if count == 3 {
+                let b0 = _storage.buffer[0]
+                let isLetter = (b0 >= 0x41 && b0 <= 0x5A) || (b0 >= 0x61 && b0 <= 0x7A)
+                let isColon = _storage.buffer[1] == 0x3A
+                let b2 = _storage.buffer[2]
+                let isSep = b2 == Self.separator || b2 == Self.altSeparator
+                return isLetter && isColon && isSep
             }
             return false
         #else
-            return s == "/"
+            return count == 1 && _storage.buffer[0] == Self.separator
         #endif
     }
 }
