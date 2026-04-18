@@ -76,43 +76,30 @@ extension Path {
     /// ```
     @inlinable
     public var parent: Path? {
-        let s = string
-
+        guard let lastSep = _lastSeparator else {
+            return nil
+        }
         #if os(Windows)
-            // Find last separator
-            guard let lastSep = s.lastIndex(where: { $0 == "/" || $0 == "\\" }) else {
+            // Separator at start (e.g., `\foo` or UNC-style `\\server`): no further parent.
+            if lastSep == 0 {
                 return nil
             }
-
-            // If separator is at start, check if it's a drive letter or UNC
-            if lastSep == s.startIndex {
-                return nil
+            // Drive-letter root: `C:\Users` → `C:\`, `C:/foo` → `C:\`.
+            // Canonicalize the separator byte to the primary `\`.
+            if lastSep == 2 && _storage.buffer[1] == 0x3A {
+                return Path(storage: Storage(driveLetter: _storage.buffer[0]))
             }
-
-            // Check for drive letter case (C:\)
-            let beforeSep = s[..<lastSep]
-            if beforeSep.count == 2 && beforeSep.last == ":" {
-                // Return drive root (e.g., "C:\")
-                return try? Path.init(Swift.String(beforeSep) + "\\")
-            }
-
-            // Return parent
-            let parentStr = Swift.String(beforeSep)
-            return parentStr.isEmpty ? nil : try? Path.init(parentStr)
+            return Path(storage: Storage(copying: _storage.buffer[..<lastSep]))
         #else
-            // Find last separator
-            guard let lastSep = s.lastIndex(of: "/") else {
+            // Only the root separator: no parent.
+            if lastSep == 0 && _storage.count == 1 {
                 return nil
             }
-
-            // If separator is at start and it's the only character, no parent
-            if lastSep == s.startIndex {
-                return s.count == 1 ? nil : try? Path.init("/")
+            // Separator at start with content after: parent is root "/".
+            if lastSep == 0 {
+                return Path(storage: Storage(root: Self.separator))
             }
-
-            // Return parent
-            let parentStr = Swift.String(s[..<lastSep])
-            return parentStr.isEmpty ? try? Path.init("/") : try? Path.init(parentStr)
+            return Path(storage: Storage(copying: _storage.buffer[..<lastSep]))
         #endif
     }
 }
@@ -129,20 +116,10 @@ extension Path {
     /// ```
     @inlinable
     public func appending(_ component: Component) -> Path {
-        let s = string
-
-        #if os(Windows)
-            // Check if path already ends with separator
-            let needsSep = !s.isEmpty && !s.hasSuffix("/") && !s.hasSuffix("\\")
-            let newPath = needsSep ? s + "\\" + component.string : s + component.string
-        #else
-            // Check if path already ends with separator
-            let needsSep = !s.isEmpty && !s.hasSuffix("/")
-            let newPath = needsSep ? s + "/" + component.string : s + component.string
-        #endif
-
-        // This should not fail since we're appending valid components
-        return (try? Path.init(newPath)) ?? self
+        Path(storage: Storage(
+            joining: _storage.buffer[..<_storage.count],
+            component._storage.buffer[..<component._storage.count]
+        ))
     }
 
     /// Returns a new path with the given string appended as a component.
@@ -172,23 +149,14 @@ extension Path {
     /// print(full.string)  // "/Users/coen/Documents"
     /// ```
     @inlinable
-    public func appending(_ other: Path) -> Path {
-        // If other is absolute, return it unchanged
+    public func appending(_ other: consuming Path) -> Path {
         if other.isAbsolute {
             return other
         }
-
-        let s = string
-
-        #if os(Windows)
-            let needsSep = !s.isEmpty && !s.hasSuffix("/") && !s.hasSuffix("\\")
-            let newPath = needsSep ? s + "\\" + other.string : s + other.string
-        #else
-            let needsSep = !s.isEmpty && !s.hasSuffix("/")
-            let newPath = needsSep ? s + "/" + other.string : s + other.string
-        #endif
-
-        return (try? Path.init(newPath)) ?? self
+        return Path(storage: Storage(
+            joining: _storage.buffer[..<_storage.count],
+            other._storage.buffer[..<other._storage.count]
+        ))
     }
 }
 
@@ -253,5 +221,104 @@ extension Path {
 
         let relativeString = relativeComponents.map(\.string).joined(separator: separator)
         return try? Path.init(relativeString)
+    }
+}
+
+// MARK: - Byte-Scanning Helpers
+
+extension Path {
+    /// Index of the last path separator in the content bytes, or `nil` if none.
+    ///
+    /// Scans `_storage.buffer[0..<count]` in reverse — excluding the trailing NUL.
+    /// On POSIX, matches `Self.separator` (0x2F). On Windows, matches either
+    /// `Self.separator` (0x5C) or `Self.altSeparator` (0x2F).
+    @usableFromInline
+    internal var _lastSeparator: Int? {
+        let count = _storage.count
+        var i = count - 1
+        while i >= 0 {
+            let byte = _storage.buffer[i]
+            if byte == Self.separator {
+                return i
+            }
+            #if os(Windows)
+                if byte == Self.altSeparator {
+                    return i
+                }
+            #endif
+            i -= 1
+        }
+        return nil
+    }
+}
+
+extension Path.Storage {
+    /// Creates storage by copying a validated slice and appending the NUL terminator.
+    ///
+    /// The slice MUST originate from a validated `Path.Storage.buffer`: this init
+    /// does no validation, relying on the source's "no control chars, no interior
+    /// NUL" invariant.
+    @usableFromInline
+    internal init(copying slice: ArraySlice<Path.Char>) {
+        var out: [Path.Char] = []
+        out.reserveCapacity(slice.count + 1)
+        out.append(contentsOf: slice)
+        out.append(0)
+        self.buffer = out
+    }
+
+    /// Creates single-character root storage (e.g., `/` on POSIX).
+    @usableFromInline
+    internal init(root separator: Path.Char) {
+        self.buffer = [separator, 0]
+    }
+
+    #if os(Windows)
+        /// Creates Windows drive-root storage (e.g., `C:\`) from a drive-letter byte.
+        ///
+        /// Canonicalizes to the primary `\` separator regardless of the input path's
+        /// separator byte (so both `C:\foo` and `C:/foo` parent to the same `C:\`).
+        @usableFromInline
+        internal init(driveLetter: Path.Char) {
+            self.buffer = [driveLetter, 0x3A, Path.separator, 0]
+        }
+    #endif
+
+    /// Creates storage by joining two validated slices with a platform separator.
+    ///
+    /// If the prefix already ends with a separator, no additional separator is
+    /// inserted. On Windows, a trailing `\` or `/` both count for deduplication;
+    /// the inserted separator (when needed) is always the primary `Path.separator`.
+    ///
+    /// Both slices MUST originate from validated storages — concatenating two
+    /// validated paths with a single ASCII separator cannot introduce control
+    /// chars or interior NULs, so this init performs no validation.
+    @usableFromInline
+    internal init(
+        joining prefix: ArraySlice<Path.Char>,
+        _ suffix: ArraySlice<Path.Char>
+    ) {
+        let endsWithSep: Bool
+        if let last = prefix.last {
+            #if os(Windows)
+                endsWithSep = last == Path.separator || last == Path.altSeparator
+            #else
+                endsWithSep = last == Path.separator
+            #endif
+        } else {
+            endsWithSep = false
+        }
+        let needsSep = !prefix.isEmpty && !endsWithSep
+        let total = prefix.count + (needsSep ? 1 : 0) + suffix.count
+
+        var out: [Path.Char] = []
+        out.reserveCapacity(total + 1)
+        out.append(contentsOf: prefix)
+        if needsSep {
+            out.append(Path.separator)
+        }
+        out.append(contentsOf: suffix)
+        out.append(0)
+        self.buffer = out
     }
 }
