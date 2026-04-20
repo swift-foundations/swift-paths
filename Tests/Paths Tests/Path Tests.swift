@@ -19,26 +19,26 @@ struct PathTests {
 
     // MARK: - Initialization
 
-    @Test("Valid absolute path initialization")
-    func initValidAbsolutePath() throws {
+    @Test
+    func `Valid absolute path initialization`() throws {
         let path = try Path("/Users/coen/Documents")
         #expect(path.string == "/Users/coen/Documents")
     }
 
-    @Test("Valid relative path initialization")
-    func initValidRelativePath() throws {
+    @Test
+    func `Valid relative path initialization`() throws {
         let path = try Path("foo/bar/baz")
         #expect(path.string == "foo/bar/baz")
     }
 
-    @Test("Single component path")
-    func initSingleComponent() throws {
+    @Test
+    func `Single component path`() throws {
         let path = try Path("file.txt")
         #expect(path.string == "file.txt")
     }
 
-    @Test("Root path")
-    func initRootPath() throws {
+    @Test
+    func `Root path`() throws {
         let path = try Path("/")
         #expect(path.string == "/")
         #if os(Windows)
@@ -50,20 +50,20 @@ struct PathTests {
 
     // MARK: - Navigation
 
-    @Test("Parent of nested path")
-    func parentOfNestedPath() throws {
+    @Test
+    func `Parent of nested path`() throws {
         let path = try Path("/usr/local/bin")
         #expect(path.parent?.string == "/usr/local")
     }
 
-    @Test("Parent of root path is nil")
-    func parentOfRootIsNil() throws {
+    @Test
+    func `Parent of root path is nil`() throws {
         let path = try Path("/")
         #expect(path.parent == nil)
     }
 
-    @Test("Parent chain")
-    func parentChain() throws {
+    @Test
+    func `Parent chain`() throws {
         let path = try Path("/a/b/c")
         #expect(path.parent?.string == "/a/b")
         #expect(path.parent?.parent?.string == "/a")
@@ -71,59 +71,59 @@ struct PathTests {
         #expect(path.parent?.parent?.parent?.parent == nil)
     }
 
-    @Test("Path components")
-    func pathComponents() throws {
+    @Test
+    func `Path components`() throws {
         let path = try Path("/Users/coen/Documents")
         let components = path.components.map(\.string)
         #expect(components == ["Users", "coen", "Documents"])
     }
 
-    @Test("components.last on multi-component path")
-    func componentsLastMulti() throws {
+    @Test
+    func `components.last on multi-component path`() throws {
         let path = try Path("/usr/local/bin")
         #expect(path.components.last?.string == "bin")
     }
 
-    @Test("components.last on single-component path")
-    func componentsLastSingle() throws {
+    @Test
+    func `components.last on single-component path`() throws {
         let path = try Path("file.txt")
         #expect(path.components.last?.string == "file.txt")
     }
 
     // MARK: - Introspection
 
-    @Test("Extension of file")
-    func extensionOfFile() throws {
+    @Test
+    func `Extension of file`() throws {
         let path = try Path("/tmp/file.txt")
         #expect(path.extension == "txt")
     }
 
-    @Test("Extension with multiple dots")
-    func extensionWithMultipleDots() throws {
+    @Test
+    func `Extension with multiple dots`() throws {
         let path = try Path("/tmp/file.tar.gz")
         #expect(path.extension == "gz")
     }
 
-    @Test("Extension of directory (none)")
-    func extensionOfDirectory() throws {
+    @Test
+    func `Extension of directory (none)`() throws {
         let path = try Path("/usr/local/bin")
         #expect(path.extension == nil)
     }
 
-    @Test("Stem of file")
-    func stemOfFile() throws {
+    @Test
+    func `Stem of file`() throws {
         let path = try Path("/tmp/file.txt")
         #expect(path.stem == "file")
     }
 
-    @Test("Stem with multiple dots")
-    func stemWithMultipleDots() throws {
+    @Test
+    func `Stem with multiple dots`() throws {
         let path = try Path("/tmp/file.tar.gz")
         #expect(path.stem == "file.tar")
     }
 
-    @Test("isAbsolute for absolute path")
-    func isAbsoluteForAbsolutePath() throws {
+    @Test
+    func `isAbsolute for absolute path`() throws {
         let path = try Path("/usr/bin")
         #if os(Windows)
         #expect(path.isAbsolute == false)
@@ -132,38 +132,38 @@ struct PathTests {
         #endif
     }
 
-    @Test("isAbsolute for relative path")
-    func isAbsoluteForRelativePath() throws {
+    @Test
+    func `isAbsolute for relative path`() throws {
         let path = try Path("usr/bin")
         #expect(path.isAbsolute == false)
     }
 
     // MARK: - Operators
 
-    @Test("Slash operator with string")
-    func slashOperatorWithString() throws {
+    @Test
+    func `Slash operator with string`() throws {
         let path = try Path("/usr")
         let newPath = path / "local" / "bin"
         #expect(newPath.string == "/usr/local/bin")
     }
 
-    @Test("Slash operator with Component")
-    func slashOperatorWithComponent() throws {
+    @Test
+    func `Slash operator with Component`() throws {
         let path = try Path("/usr")
         let component = try Path.Component("local")
         let newPath = path / component
         #expect(newPath.string == "/usr/local")
     }
 
-    @Test("Slash operator with chained components")
-    func slashOperatorWithChainedComponents() throws {
+    @Test
+    func `Slash operator with chained components`() throws {
         let dir = try Path("/Users/coen")
         let nested = dir / "Documents" / "Projects" / "readme.txt"
         #expect(nested.string == "/Users/coen/Documents/Projects/readme.txt")
     }
 
-    @Test("Slash operator with relative path")
-    func slashOperatorWithRelativePath() throws {
+    @Test
+    func `Slash operator with relative path`() throws {
         let dir = try Path("/Users/coen")
         let rel = try Path("Documents/Projects/readme.txt")
         let nested = dir / rel
@@ -172,29 +172,29 @@ struct PathTests {
 
     // MARK: - hasPrefix
 
-    @Test("hasPrefix returns true for proper prefix")
-    func hasPrefixProper() throws {
+    @Test
+    func `hasPrefix returns true for proper prefix`() throws {
         let path = try Path("/Users/coen/Documents")
         #expect(path.hasPrefix(try Path("/Users")))
         #expect(path.hasPrefix(try Path("/Users/coen")))
         #expect(path.hasPrefix(try Path("/Users/coen/Documents")))
     }
 
-    @Test("hasPrefix returns false for mismatch")
-    func hasPrefixMismatch() throws {
+    @Test
+    func `hasPrefix returns false for mismatch`() throws {
         let path = try Path("/Users/coen/Documents")
         #expect(!path.hasPrefix(try Path("/var")))
         #expect(!path.hasPrefix(try Path("/Users/bob")))
     }
 
-    @Test("hasPrefix returns false when other is longer")
-    func hasPrefixLongerOther() throws {
+    @Test
+    func `hasPrefix returns false when other is longer`() throws {
         let path = try Path("/Users")
         #expect(!path.hasPrefix(try Path("/Users/coen/Documents")))
     }
 
-    @Test("hasPrefix with relative paths")
-    func hasPrefixRelative() throws {
+    @Test
+    func `hasPrefix with relative paths`() throws {
         let path = try Path("foo/bar/baz")
         #expect(path.hasPrefix(try Path("foo")))
         #expect(path.hasPrefix(try Path("foo/bar")))
@@ -203,8 +203,8 @@ struct PathTests {
 
     // MARK: - relative(to:)
 
-    @Test("relative(to:) strips the base prefix")
-    func relativeStripsPrefix() throws {
+    @Test
+    func `relative(to:) strips the base prefix`() throws {
         let full = try Path("/Users/coen/Documents/file.txt")
         let base = try Path("/Users/coen")
         let rel = full.relative(to: base)
@@ -218,8 +218,8 @@ struct PathTests {
         #expect(rel?.string == ".")
     }
 
-    @Test("relative(to:) returns nil when base isn't a prefix")
-    func relativeNonPrefix() throws {
+    @Test
+    func `relative(to:) returns nil when base isn't a prefix`() throws {
         let full = try Path("/Users/coen/Documents")
         let base = try Path("/var/log")
         #expect(full.relative(to: base) == nil)
@@ -227,43 +227,43 @@ struct PathTests {
 
     // MARK: - Components lazy view
 
-    @Test("components.last with trailing separator omits empty")
-    func componentsLastTrailingSeparator() throws {
+    @Test
+    func `components.last with trailing separator omits empty`() throws {
         #expect(try Path("backup/").components.last?.string == "backup")
         #expect(try Path("/foo/").components.last?.string == "foo")
         #expect(try Path("/").components.last == nil)
     }
 
-    @Test("components.first returns the first non-empty segment")
-    func componentsFirst() throws {
+    @Test
+    func `components.first returns the first non-empty segment`() throws {
         #expect(try Path("/foo/bar").components.first?.string == "foo")
         #expect(try Path("//foo").components.first?.string == "foo")
         #expect(try Path("foo/bar").components.first?.string == "foo")
     }
 
-    @Test("components iteration omits empty segments")
-    func componentsIterationOmitsEmpty() throws {
+    @Test
+    func `components iteration omits empty segments`() throws {
         let path = try Path("/foo//bar/")
         let names = path.components.map(\.string)
         #expect(names == ["foo", "bar"])
     }
 
-    @Test("components.count matches eager materialization")
-    func componentsCount() throws {
+    @Test
+    func `components.count matches eager materialization`() throws {
         let path = try Path("/a/b/c/d/e")
         #expect(path.components.count == 5)
     }
 
     // MARK: - Protocols
 
-    @Test("ExpressibleByStringLiteral")
-    func expressibleByStringLiteral() {
+    @Test
+    func `ExpressibleByStringLiteral`() {
         let path: Path = "/usr/local/bin"
         #expect(path.string == "/usr/local/bin")
     }
 
-    @Test("Hashable conformance")
-    func hashableConformance() throws {
+    @Test
+    func `Hashable conformance`() throws {
         let path1 = try Path("/usr/local")
         let path2 = try Path("/usr/local")
         let path3 = try Path("/usr/bin")
@@ -272,8 +272,8 @@ struct PathTests {
         #expect(path1.hashValue != path3.hashValue)
     }
 
-    @Test("Equatable conformance")
-    func equatableConformance() throws {
+    @Test
+    func `Equatable conformance`() throws {
         let path1 = try Path("/usr/local")
         let path2 = try Path("/usr/local")
         let path3 = try Path("/usr/bin")
@@ -282,8 +282,8 @@ struct PathTests {
         #expect(path1 != path3)
     }
 
-    @Test("Use in Set")
-    func useInSet() throws {
+    @Test
+    func `Use in Set`() throws {
         let path1 = try Path("/usr/local")
         let path2 = try Path("/usr/local")
         let path3 = try Path("/usr/bin")
@@ -292,8 +292,8 @@ struct PathTests {
         #expect(set.count == 2)
     }
 
-    @Test("Use as Dictionary key")
-    func useAsDictionaryKey() throws {
+    @Test
+    func `Use as Dictionary key`() throws {
         let path1 = try Path("/usr/local")
         let path2 = try Path("/usr/bin")
 
@@ -305,8 +305,8 @@ struct PathTests {
         #expect(dict[path2] == 2)
     }
 
-    @Test("String conversion")
-    func stringConversion() throws {
+    @Test
+    func `String conversion`() throws {
         let path = try Path("/usr/local/bin")
         #expect(String(path) == "/usr/local/bin")
     }
@@ -317,50 +317,50 @@ struct PathTests {
 @Suite("Path.Error Tests")
 struct PathErrorTests {
 
-    @Test("Empty path throws empty error")
-    func emptyPathThrowsError() {
+    @Test
+    func `Empty path throws empty error`() {
         #expect(throws: Path.Error.empty) {
             try Path.init("")
         }
     }
 
-    @Test("Interior NUL byte throws containsInteriorNUL")
-    func interiorNULThrowsError() {
+    @Test
+    func `Interior NUL byte throws containsInteriorNUL`() {
         #expect(throws: Path.Error.containsInteriorNUL) {
             try Path.init("/tmp/file\0.txt")
         }
     }
 
-    @Test("Newline character throws containsControlCharacters")
-    func newlineThrowsError() {
+    @Test
+    func `Newline character throws containsControlCharacters`() {
         #expect(throws: Path.Error.containsControlCharacters) {
             try Path.init("/tmp/file\n.txt")
         }
     }
 
-    @Test("Carriage return throws containsControlCharacters")
-    func carriageReturnThrowsError() {
+    @Test
+    func `Carriage return throws containsControlCharacters`() {
         #expect(throws: Path.Error.containsControlCharacters) {
             try Path.init("/tmp/file\r.txt")
         }
     }
 
-    @Test("Tab character throws containsControlCharacters")
-    func tabThrowsError() {
+    @Test
+    func `Tab character throws containsControlCharacters`() {
         #expect(throws: Path.Error.containsControlCharacters) {
             try Path.init("/tmp/file\t.txt")
         }
     }
 
-    @Test("Bell character throws containsControlCharacters")
-    func bellThrowsError() {
+    @Test
+    func `Bell character throws containsControlCharacters`() {
         #expect(throws: Path.Error.containsControlCharacters) {
             try Path.init("/tmp/file\u{07}.txt")
         }
     }
 
-    @Test("Error cases are equatable")
-    func errorEquatable() {
+    @Test
+    func `Error cases are equatable`() {
         #expect(Path.Error.empty == Path.Error.empty)
         #expect(Path.Error.containsControlCharacters == Path.Error.containsControlCharacters)
         #expect(Path.Error.containsInteriorNUL == Path.Error.containsInteriorNUL)
@@ -368,8 +368,8 @@ struct PathErrorTests {
         #expect(Path.Error.containsControlCharacters != Path.Error.containsInteriorNUL)
     }
 
-    @Test("Error is Sendable")
-    func errorIsSendable() async {
+    @Test
+    func `Error is Sendable`() async {
         let error = Path.Error.empty
 
         await Task {
@@ -377,8 +377,8 @@ struct PathErrorTests {
         }.value
     }
 
-    @Test("Error descriptions")
-    func errorDescriptions() {
+    @Test
+    func `Error descriptions`() {
         #expect(Path.Error.empty.description.contains("empty"))
         #expect(Path.Error.containsControlCharacters.description.contains("control"))
         #expect(Path.Error.containsInteriorNUL.description.contains("NUL"))
@@ -392,84 +392,84 @@ struct PathComponentTests {
 
     // MARK: - Initialization
 
-    @Test("Valid component initialization")
-    func validComponent() throws {
+    @Test
+    func `Valid component initialization`() throws {
         let component = try Path.Component("file.txt")
         #expect(component.string == "file.txt")
     }
 
-    @Test("Component with special characters")
-    func componentWithSpecialCharacters() throws {
+    @Test
+    func `Component with special characters`() throws {
         let component = try Path.Component("file-name_v2.0.txt")
         #expect(component.string == "file-name_v2.0.txt")
     }
 
-    @Test("Component with spaces")
-    func componentWithSpaces() throws {
+    @Test
+    func `Component with spaces`() throws {
         let component = try Path.Component("my file.txt")
         #expect(component.string == "my file.txt")
     }
 
     // MARK: - Properties
 
-    @Test("Extension of component")
-    func extensionOfComponent() throws {
+    @Test
+    func `Extension of component`() throws {
         let component = try Path.Component("readme.txt")
         #expect(component.extension == "txt")
     }
 
-    @Test("Extension of dotfile (none)")
-    func extensionOfDotfile() throws {
+    @Test
+    func `Extension of dotfile (none)`() throws {
         let component = try Path.Component(".gitignore")
         #expect(component.extension == nil)
     }
 
-    @Test("Extension with multiple dots")
-    func extensionWithMultipleDots() throws {
+    @Test
+    func `Extension with multiple dots`() throws {
         let component = try Path.Component("file.tar.gz")
         #expect(component.extension == "gz")
     }
 
-    @Test("Extension when none")
-    func extensionWhenNone() throws {
+    @Test
+    func `Extension when none`() throws {
         let component = try Path.Component("Makefile")
         #expect(component.extension == nil)
     }
 
-    @Test("Stem of component")
-    func stemOfComponent() throws {
+    @Test
+    func `Stem of component`() throws {
         let component = try Path.Component("readme.txt")
         #expect(component.stem == "readme")
     }
 
-    @Test("Stem of dotfile")
-    func stemOfDotfile() throws {
+    @Test
+    func `Stem of dotfile`() throws {
         let component = try Path.Component(".gitignore")
         #expect(component.stem == ".gitignore")
     }
 
-    @Test("Stem with multiple dots")
-    func stemWithMultipleDots() throws {
+    @Test
+    func `Stem with multiple dots`() throws {
         let component = try Path.Component("archive.tar.gz")
         #expect(component.stem == "archive.tar")
     }
 
-    @Test("Stem when no extension")
-    func stemWhenNoExtension() throws {
+    @Test
+    func `Stem when no extension`() throws {
         let component = try Path.Component("Makefile")
         #expect(component.stem == "Makefile")
     }
 
     // MARK: - Protocols
 
-    @Test("ExpressibleByStringLiteral")
-    func expressibleByStringLiteral() {
+    @Test
+    func `ExpressibleByStringLiteral`() {
         let component: Path.Component = "file.txt"
         #expect(component.string == "file.txt")
     }
 
-    @Test("Hashable conformance")
-    func hashableConformance() throws {
+    @Test
+    func `Hashable conformance`() throws {
         let comp1 = try Path.Component("file.txt")
         let comp2 = try Path.Component("file.txt")
         let comp3 = try Path.Component("other.txt")
@@ -478,8 +478,8 @@ struct PathComponentTests {
         #expect(comp1.hashValue != comp3.hashValue)
     }
 
-    @Test("Equatable conformance")
-    func equatableConformance() throws {
+    @Test
+    func `Equatable conformance`() throws {
         let comp1 = try Path.Component("file.txt")
         let comp2 = try Path.Component("file.txt")
         let comp3 = try Path.Component("other.txt")
@@ -488,16 +488,16 @@ struct PathComponentTests {
         #expect(comp1 != comp3)
     }
 
-    @Test("String conversion")
-    func stringConversion() throws {
+    @Test
+    func `String conversion`() throws {
         let component = try Path.Component("file.txt")
         #expect(String(component) == "file.txt")
     }
 
     // MARK: - Integration with Path
 
-    @Test("Component can be appended to path")
-    func componentAppendedToPath() throws {
+    @Test
+    func `Component can be appended to path`() throws {
         let path = try Path("/usr/local")
         let component = try Path.Component("bin")
         let newPath = path / component
@@ -510,43 +510,43 @@ struct PathComponentTests {
 @Suite("Path.Component.Error Tests")
 struct PathComponentErrorTests {
 
-    @Test("Empty component throws empty error")
-    func emptyComponentThrowsError() {
+    @Test
+    func `Empty component throws empty error`() {
         #expect(throws: Path.Component.Error.empty) {
             try Path.Component.init("")
         }
     }
 
-    @Test("Component with path separator throws error")
-    func pathSeparatorThrowsError() {
+    @Test
+    func `Component with path separator throws error`() {
         #expect(throws: Path.Component.Error.containsPathSeparator) {
             try Path.Component.init("foo/bar")
         }
     }
 
-    @Test("Interior NUL byte throws containsInteriorNUL")
-    func interiorNULThrowsError() {
+    @Test
+    func `Interior NUL byte throws containsInteriorNUL`() {
         #expect(throws: Path.Component.Error.containsInteriorNUL) {
             try Path.Component.init("file\0.txt")
         }
     }
 
-    @Test("Control character throws containsControlCharacters")
-    func controlCharacterThrowsError() {
+    @Test
+    func `Control character throws containsControlCharacters`() {
         #expect(throws: Path.Component.Error.containsControlCharacters) {
             try Path.Component.init("file\n.txt")
         }
     }
 
-    @Test("Error cases are equatable")
-    func errorEquatable() {
+    @Test
+    func `Error cases are equatable`() {
         #expect(Path.Component.Error.empty == Path.Component.Error.empty)
         #expect(Path.Component.Error.containsPathSeparator == Path.Component.Error.containsPathSeparator)
         #expect(Path.Component.Error.empty != Path.Component.Error.containsPathSeparator)
     }
 
-    @Test("Error descriptions")
-    func errorDescriptions() {
+    @Test
+    func `Error descriptions`() {
         #expect(Path.Component.Error.empty.description.contains("empty"))
         #expect(Path.Component.Error.containsPathSeparator.description.contains("separator"))
         #expect(Path.Component.Error.containsControlCharacters.description.contains("control"))
