@@ -12,7 +12,7 @@
 public import Kernel_Path_Primitives
 
 extension Path {
-    /// Non-escapable view of a null-terminated path.
+    /// Non-escapable borrowed view of a null-terminated path.
     ///
     /// Does not own storage. Valid only for the duration of the borrowing scope.
     /// The referenced memory must remain valid and unmodified while borrowed.
@@ -30,7 +30,7 @@ extension Path {
     /// // Use view for syscalls or comparisons
     /// ```
     @safe
-    public struct View: ~Copyable, ~Escapable {
+    public struct Borrowed: ~Copyable, ~Escapable {
         /// The underlying pointer to the null-terminated path.
         public let pointer: UnsafePointer<Path.Char>
     }
@@ -38,10 +38,10 @@ extension Path {
 
 // MARK: - Initialization
 
-extension Path.View {
-    /// Creates a view from a pointer.
+extension Path.Borrowed {
+    /// Creates a borrowed view from a pointer.
     ///
-    /// The lifetime of this `View` value is tied to the lifetime of `pointer`.
+    /// The lifetime of this `Borrowed` value is tied to the lifetime of `pointer`.
     ///
     /// - Precondition: `pointer` must point to a null-terminated sequence.
     @inlinable
@@ -50,9 +50,9 @@ extension Path.View {
         unsafe (self.pointer = pointer)
     }
 
-    /// Creates a view borrowing from an owned `Path`.
+    /// Creates a borrowed view from an owned `Path`.
     ///
-    /// This is the primary way to get a `View` from a `Path`.
+    /// This is the primary way to get a `Borrowed` from a `Path`.
     /// The view's lifetime is tied to the path's lifetime.
     @inlinable
     @_lifetime(borrow path)
@@ -65,7 +65,7 @@ extension Path.View {
 
 // MARK: - Access
 
-extension Path.View {
+extension Path.Borrowed {
     /// Executes a closure with the underlying pointer.
     @unsafe
     @inlinable
@@ -108,30 +108,30 @@ extension Path.View {
     }
 }
 
-// MARK: - View Property
+// MARK: - Borrowed Property
 
 extension Path {
-    /// A non-escaping view of this path.
+    /// A non-escaping borrowed view of this path.
     ///
     /// The view borrows from this path and cannot outlive it.
     @inlinable
-    public var view: View {
+    public var view: Borrowed {
         @_lifetime(borrow self) borrowing get {
-            View(borrowing: self)
+            Borrowed(borrowing: self)
         }
     }
 }
 
 // MARK: - Kernel.Path Bridge
 
-extension Path.View {
-    /// A `Kernel.Path.View` for syscall interop.
+extension Path.Borrowed {
+    /// A `Kernel.Path.Borrowed` for syscall interop.
     ///
-    /// This bridges `Path.View` to `Kernel.Path.View` without allocation.
+    /// This bridges `Path.Borrowed` to `Kernel.Path.Borrowed` without allocation.
     @inlinable
-    public var kernelPath: Kernel.Path.View {
+    public var kernelPath: Kernel.Path.Borrowed {
         @_lifetime(copy self) borrowing get {
-            let kv = unsafe Kernel.Path.View(self.pointer, count: self.length)
+            let kv = unsafe Kernel.Path.Borrowed(self.pointer, count: self.length)
             return unsafe _overrideLifetime(kv, copying: self)
         }
     }

@@ -237,17 +237,17 @@ extension Path {
 // MARK: - Kernel.Path Bridge
 
 extension Path {
-    /// A borrowed `Kernel.Path.View` for syscall interop.
+    /// A `Kernel.Path.Borrowed` for syscall interop.
     ///
     /// ## Zero-Allocation on POSIX
     ///
     /// On POSIX systems, both `Path` and `Kernel.Path` store UTF-8 bytes,
     /// so this property borrows directly from the internal buffer without allocation.
     @inlinable
-    public var kernelPath: Kernel.Path.View {
+    public var kernelPath: Kernel.Path.Borrowed {
         @_lifetime(borrow self) borrowing get {
             let ptr = unsafe _storage.buffer.withUnsafeBufferPointer { $0.baseAddress! }
-            let view = unsafe Kernel.Path.View(ptr, count: _storage.buffer.count - 1)
+            let view = unsafe Kernel.Path.Borrowed(ptr, count: _storage.buffer.count - 1)
             return unsafe _overrideLifetime(view, borrowing: self)
         }
     }
