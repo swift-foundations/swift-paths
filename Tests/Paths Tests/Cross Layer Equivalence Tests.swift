@@ -11,7 +11,7 @@
 
 import Testing
 
-// Test-only import. Reaches the L2 POSIX `Path.View: @retroactive Path.Protocol`
+// Test-only import. Reaches the L2 POSIX `Path.Borrowed: @retroactive Path.Protocol`
 // conformance via the L3 Kernel unification chain per [PLAT-ARCH-006]:
 //   Kernel_Core → POSIX_Kernel → POSIX_Kernel_File → ISO_9945_Kernel_File.
 // Production swift-paths does NOT depend on this — byte-scan is duplicated at L3
@@ -31,7 +31,7 @@ import Kernel_Core
 /// here before reaching downstream consumers.
 ///
 /// Windows is excluded until Phase 4a Windows lands the corresponding
-/// `Path.View: Path.Protocol` conformance in swift-windows-standard.
+/// `Path.Borrowed: Path.Protocol` conformance in swift-windows-standard.
 #if !os(Windows)
     @Suite("L1 ↔ L3 equivalence (POSIX)")
     struct CrossLayerPathEquivalencePOSIX {
