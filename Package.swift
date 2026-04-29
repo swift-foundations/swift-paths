@@ -17,13 +17,14 @@ let package = Package(
     dependencies: [
         .package(path: "../../swift-primitives/swift-kernel-primitives"),
         .package(path: "../../swift-primitives/swift-binary-primitives"),
+        .package(path: "../../swift-primitives/swift-path-primitives"),
         .package(path: "../swift-kernel")
     ],
     targets: [
         .target(
             name: "Paths",
             dependencies: [
-                .product(name: "Kernel Path Primitives", package: "swift-kernel-primitives"),
+                .product(name: "Path Primitives", package: "swift-path-primitives"),
                 .product(name: "Binary Primitives", package: "swift-binary-primitives")
             ]
         ),
