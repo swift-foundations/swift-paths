@@ -9,7 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Kernel_Path_Primitives
+public import Path_Primitives
 
 extension Path {
     /// Non-escapable borrowed view of a null-terminated path.
@@ -122,16 +122,17 @@ extension Path {
     }
 }
 
-// MARK: - Kernel.Path Bridge
+// MARK: - Path Bridge
 
 extension Path.Borrowed {
-    /// A `Kernel.Path.Borrowed` for syscall interop.
+    /// A `Path_Primitives.Path.Borrowed` for syscall interop.
     ///
-    /// This bridges `Path.Borrowed` to `Kernel.Path.Borrowed` without allocation.
+    /// This bridges this Foundation-level `Path.Borrowed` to the underlying
+    /// L1 `Path_Primitives.Path.Borrowed` without allocation.
     @inlinable
-    public var kernelPath: Kernel.Path.Borrowed {
+    public var kernelPath: Path_Primitives.Path.Borrowed {
         @_lifetime(copy self) borrowing get {
-            let kv = unsafe Kernel.Path.Borrowed(self.pointer, count: self.length)
+            let kv = unsafe Path_Primitives.Path.Borrowed(self.pointer, count: self.length)
             return unsafe _overrideLifetime(kv, copying: self)
         }
     }

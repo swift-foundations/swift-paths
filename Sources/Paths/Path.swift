@@ -9,7 +9,7 @@
 //
 // ===----------------------------------------------------------------------===//
 
-public import Kernel_Path_Primitives
+public import Path_Primitives
 
 /// A platform-native owned file path.
 ///
@@ -18,7 +18,7 @@ public import Kernel_Path_Primitives
 /// - Stores data in platform-native encoding (UTF-8 on POSIX, UTF-16 on Windows)
 /// - Validates on construction (non-empty, no control characters, no interior NUL)
 /// - Provides path manipulation (parent, components, joining via `/`)
-/// - Bridges to `Kernel.Path` for syscall interop via `withKernelPath(_:)`
+/// - Bridges to `Path` for syscall interop via `withKernelPath(_:)`
 ///
 /// ## Platform Encoding
 ///
@@ -234,20 +234,20 @@ extension Path {
     }
 }
 
-// MARK: - Kernel.Path Bridge
+// MARK: - Path Bridge
 
 extension Path {
-    /// A `Kernel.Path.Borrowed` for syscall interop.
+    /// A `Path_Primitives.Path.Borrowed` for syscall interop.
     ///
     /// ## Zero-Allocation on POSIX
     ///
-    /// On POSIX systems, both `Path` and `Kernel.Path` store UTF-8 bytes,
+    /// On POSIX systems, both `Path` and `Path_Primitives.Path` store UTF-8 bytes,
     /// so this property borrows directly from the internal buffer without allocation.
     @inlinable
-    public var kernelPath: Kernel.Path.Borrowed {
+    public var kernelPath: Path_Primitives.Path.Borrowed {
         @_lifetime(borrow self) borrowing get {
             let ptr = unsafe _storage.buffer.withUnsafeBufferPointer { $0.baseAddress! }
-            let view = unsafe Kernel.Path.Borrowed(ptr, count: _storage.buffer.count - 1)
+            let view = unsafe Path_Primitives.Path.Borrowed(ptr, count: _storage.buffer.count - 1)
             return unsafe _overrideLifetime(view, borrowing: self)
         }
     }
