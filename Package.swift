@@ -15,7 +15,6 @@ let package = Package(
         .library(name: "Paths", targets: ["Paths"])
     ],
     dependencies: [
-        .package(path: "../../swift-primitives/swift-kernel-primitives"),
         .package(path: "../../swift-primitives/swift-binary-primitives"),
         .package(path: "../../swift-primitives/swift-path-primitives"),
         .package(path: "../swift-kernel")
