@@ -29,6 +29,9 @@ extension Path {
     /// let view = path.view  // Borrowed, non-escaping
     /// // Use view for syscalls or comparisons
     /// ```
+    // WHY: Category D (SP-5) — pointer-backed value type; storage is
+    // WHY: private/internal; the type's safe API never lets the raw pointer
+    // WHY: escape, and lifetime invariants are enforced by init/deinit pairing.
     @safe
     public struct Borrowed: ~Copyable, ~Escapable {
         /// The underlying pointer to the null-terminated path.
