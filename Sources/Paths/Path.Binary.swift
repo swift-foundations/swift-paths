@@ -17,7 +17,9 @@ extension Path: Binary.Serializable {
     /// Serializes the path as UTF-8 bytes.
     ///
     /// The serialized output is the UTF-8 encoding of the path string,
-    /// suitable for cross-platform storage and transmission.
+    /// suitable for cross-platform storage and transmission. The
+    /// `String.UTF8View` (`UInt8` element) bridges to a `Buffer<Byte>`
+    /// via the BSLI cross-domain `append(contentsOf:)` extension.
     ///
     /// ```swift
     /// let path = try Path("/Users/coen")
@@ -29,7 +31,7 @@ extension Path: Binary.Serializable {
     public static func serialize<Buffer: RangeReplaceableCollection>(
         _ path: Self,
         into buffer: inout Buffer
-    ) where Buffer.Element == UInt8 {
+    ) where Buffer.Element == Byte {
         // Always serialize as UTF-8 for cross-platform compatibility
         buffer.append(contentsOf: path.string.utf8)
     }
@@ -43,7 +45,7 @@ extension Path.Component: Binary.Serializable {
     public static func serialize<Buffer: RangeReplaceableCollection>(
         _ component: Self,
         into buffer: inout Buffer
-    ) where Buffer.Element == UInt8 {
+    ) where Buffer.Element == Byte {
         buffer.append(contentsOf: component.string.utf8)
     }
 }
