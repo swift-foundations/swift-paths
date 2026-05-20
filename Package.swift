@@ -16,6 +16,7 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../../swift-primitives/swift-binary-primitives"),
+        .package(path: "../../swift-primitives/swift-binary-serializer-primitives"),
         .package(path: "../../swift-primitives/swift-path-primitives"),
         .package(path: "../swift-kernel")
     ],
@@ -24,7 +25,8 @@ let package = Package(
             name: "Paths",
             dependencies: [
                 .product(name: "Path Primitives", package: "swift-path-primitives"),
-                .product(name: "Binary Primitives", package: "swift-binary-primitives")
+                .product(name: "Binary Primitives", package: "swift-binary-primitives"),
+                .product(name: "Binary Serializable Primitives", package: "swift-binary-serializer-primitives")
             ]
         ),
         .testTarget(

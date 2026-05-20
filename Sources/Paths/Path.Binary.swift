@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 public import Binary_Primitives
+public import Binary_Serializable_Primitives
 
 // MARK: - Binary.Serializable
 
