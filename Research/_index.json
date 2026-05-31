@@ -5,17 +5,5 @@
   "title": "Research Index — swift-paths",
   "blurb": "",
   "scope": "swift-paths (swift-foundations)",
-  "documents": [
-    {
-      "file": "audit.md",
-      "displayName": "audit.md",
-      "topic": "Legacy audit findings from cross-package pre-publication audit (P0/P1/P2)",
-      "date": "2026-04-08",
-      "status": "LEGACY",
-      "statusDetail": null,
-      "statusRaw": "LEGACY",
-      "tier": null,
-      "scope": "cross-package"
-    }
-  ]
+  "documents": []
 }
