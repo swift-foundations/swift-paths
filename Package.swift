@@ -15,10 +15,10 @@ let package = Package(
         .library(name: "Paths", targets: ["Paths"])
     ],
     dependencies: [
-        .package(path: "../../swift-primitives/swift-binary-primitives"),
-        .package(path: "../../swift-primitives/swift-binary-serializer-primitives"),
-        .package(path: "../../swift-primitives/swift-path-primitives"),
-        .package(path: "../swift-kernel")
+        .package(url: "https://github.com/swift-primitives/swift-binary-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-binary-serializer-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-primitives/swift-path-primitives.git", branch: "main"),
+        .package(url: "https://github.com/swift-foundations/swift-kernel.git", branch: "main")
     ],
     targets: [
         .target(
