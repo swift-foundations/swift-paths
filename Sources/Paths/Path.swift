@@ -55,7 +55,7 @@ public struct Path: Copyable, Sendable, Hashable {
     ///
     /// - Parameter bytes: The path bytes. Must NOT include a NUL terminator.
     /// - Throws: `Path.Error` if validation fails.
-    public init(copying bytes: Span<Char>) throws(Error) {
+    public init(copying bytes: Swift.Span<Char>) throws(Error) {
         guard bytes.count > 0 else {
             throw .empty
         }
@@ -288,7 +288,7 @@ extension Path {
     /// let stats = try Kernel.File.Stats.get(path: path.bytes)  // Safe - no `unsafe` needed
     /// ```
     @inlinable
-    public var bytes: Span<Char> {
+    public var bytes: Swift.Span<Char> {
         @_lifetime(borrow self)
         borrowing get {
             _storage.buffer.span
@@ -306,7 +306,7 @@ extension Path {
     ///
     /// - Complexity: O(1) - sub-span of owned storage.
     @inlinable
-    public var content: Span<Char> {
+    public var content: Swift.Span<Char> {
         @_lifetime(borrow self)
         borrowing get {
             _storage.buffer.span.extracting(0..<_storage.count)

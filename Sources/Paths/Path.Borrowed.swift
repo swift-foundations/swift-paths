@@ -92,7 +92,7 @@ extension Path.Borrowed {
 
     /// Returns a `Span` view of the path content, excluding the null terminator.
     @inlinable
-    public var span: Span<Path.Char> {
+    public var span: Swift.Span<Path.Char> {
         @_lifetime(copy self) borrowing get {
             let span = unsafe Span(_unsafeStart: pointer, count: length)
             return unsafe _overrideLifetime(span, copying: self)
@@ -103,7 +103,7 @@ extension Path.Borrowed {
     ///
     /// Useful for syscalls that expect null-terminated data.
     @inlinable
-    public var spanWithTerminator: Span<Path.Char> {
+    public var spanWithTerminator: Swift.Span<Path.Char> {
         @_lifetime(copy self) borrowing get {
             let span = unsafe Span(_unsafeStart: pointer, count: length + 1)
             return unsafe _overrideLifetime(span, copying: self)
