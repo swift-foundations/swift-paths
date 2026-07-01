@@ -48,7 +48,7 @@ extension Path {
                         throw .containsInteriorNUL
                     }
                     // Check for path separators (both / and \)
-                    if unit == UInt16(ascii: "/") || unit == UInt16(ascii: "\\") {
+                    if unit == Path.separator || unit == Path.altSeparator {
                         throw .containsPathSeparator
                     }
                     // Check for control characters (0x00-0x1F, 0x7F)
