@@ -28,8 +28,10 @@ extension Path.Component.Stem.Error: CustomStringConvertible {
         switch self {
         case .empty:
             return "Stem is empty"
+
         case .containsPathSeparator:
             return "Stem contains path separator"
+
         case .containsControlCharacters:
             return "Stem contains control characters"
         }

@@ -108,7 +108,12 @@ extension Path {
                 newName = stem.string
             }
 
-            guard let newComponent = try? Component(newName) else { return }
+            let newComponent: Component
+            do throws(Component.Error) {
+                newComponent = try Component(newName)
+            } catch {
+                return
+            }
 
             if let parentPath = parent {
                 // Direct storage transfer — parentPath.appending already produces

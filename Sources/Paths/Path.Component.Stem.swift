@@ -44,13 +44,13 @@ extension Path.Component {
 
                 // Check for path separators
                 #if os(Windows)
-                if scalar == "/" || scalar == "\\" {
-                    throw .containsPathSeparator
-                }
+                    if scalar == "/" || scalar == "\\" {
+                        throw .containsPathSeparator
+                    }
                 #else
-                if scalar == "/" {
-                    throw .containsPathSeparator
-                }
+                    if scalar == "/" {
+                        throw .containsPathSeparator
+                    }
                 #endif
 
                 // Check for control characters (0x00-0x1F, 0x7F)

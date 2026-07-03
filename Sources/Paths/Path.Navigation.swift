@@ -42,7 +42,6 @@ extension Path {
     @inlinable
     public var components: Components { Components(self) }
 
-
     /// The parent directory of this path.
     ///
     /// Returns `nil` if this is a root path or has no parent.
@@ -96,10 +95,12 @@ extension Path {
     /// ```
     @inlinable
     public func appending(_ component: Component) -> Path {
-        Path(storage: Storage(
-            joining: _storage.buffer[..<_storage.count],
-            component._storage.buffer[..<component._storage.count]
-        ))
+        Path(
+            storage: Storage(
+                joining: _storage.buffer[..<_storage.count],
+                component._storage.buffer[..<component._storage.count]
+            )
+        )
     }
 
     /// Returns a new path with the given string appended as a component.
@@ -133,10 +134,12 @@ extension Path {
         if other.isAbsolute {
             return other
         }
-        return Path(storage: Storage(
-            joining: _storage.buffer[..<_storage.count],
-            other._storage.buffer[..<other._storage.count]
-        ))
+        return Path(
+            storage: Storage(
+                joining: _storage.buffer[..<_storage.count],
+                other._storage.buffer[..<other._storage.count]
+            )
+        )
     }
 }
 
@@ -196,7 +199,16 @@ extension Path {
             remainder.append(comp)
         }
         if remainder.isEmpty {
-            return try? Path.init(".")
+            // "." is a static, always-valid literal — none of Path.Error's
+            // cases (empty, containsControlCharacters, containsInteriorNUL)
+            // can trigger, so the catch branch is unreachable in practice.
+            // `force_try` (error severity) forbids `try!`, so the guarantee
+            // is expressed via explicit do/catch instead ([IMPL-108]).
+            do throws(Self.Error) {
+                return try Path(".")
+            } catch {
+                fatalError("\".\" is a statically valid Path literal: \(error)")
+            }
         }
 
         // Join remainder component buffers directly with Self.separator.

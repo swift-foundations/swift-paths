@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 import Testing
+
 @testable import Paths
 
 // MARK: - Path Tests
@@ -42,9 +43,9 @@ struct PathTests {
         let path = try Path("/")
         #expect(path.string == "/")
         #if os(Windows)
-        #expect(path.isAbsolute == false)
+            #expect(path.isAbsolute == false)
         #else
-        #expect(path.isAbsolute == true)
+            #expect(path.isAbsolute == true)
         #endif
     }
 
@@ -126,9 +127,9 @@ struct PathTests {
     func `isAbsolute for absolute path`() throws {
         let path = try Path("/usr/bin")
         #if os(Windows)
-        #expect(path.isAbsolute == false)
+            #expect(path.isAbsolute == false)
         #else
-        #expect(path.isAbsolute == true)
+            #expect(path.isAbsolute == true)
         #endif
     }
 
@@ -320,42 +321,42 @@ struct PathErrorTests {
     @Test
     func `Empty path throws empty error`() {
         #expect(throws: Path.Error.empty) {
-            try Path.init("")
+            try Path("")
         }
     }
 
     @Test
     func `Interior NUL byte throws containsInteriorNUL`() {
         #expect(throws: Path.Error.containsInteriorNUL) {
-            try Path.init("/tmp/file\0.txt")
+            try Path("/tmp/file\0.txt")
         }
     }
 
     @Test
     func `Newline character throws containsControlCharacters`() {
         #expect(throws: Path.Error.containsControlCharacters) {
-            try Path.init("/tmp/file\n.txt")
+            try Path("/tmp/file\n.txt")
         }
     }
 
     @Test
     func `Carriage return throws containsControlCharacters`() {
         #expect(throws: Path.Error.containsControlCharacters) {
-            try Path.init("/tmp/file\r.txt")
+            try Path("/tmp/file\r.txt")
         }
     }
 
     @Test
     func `Tab character throws containsControlCharacters`() {
         #expect(throws: Path.Error.containsControlCharacters) {
-            try Path.init("/tmp/file\t.txt")
+            try Path("/tmp/file\t.txt")
         }
     }
 
     @Test
     func `Bell character throws containsControlCharacters`() {
         #expect(throws: Path.Error.containsControlCharacters) {
-            try Path.init("/tmp/file\u{07}.txt")
+            try Path("/tmp/file\u{07}.txt")
         }
     }
 
@@ -513,28 +514,28 @@ struct PathComponentErrorTests {
     @Test
     func `Empty component throws empty error`() {
         #expect(throws: Path.Component.Error.empty) {
-            try Path.Component.init("")
+            try Path.Component("")
         }
     }
 
     @Test
     func `Component with path separator throws error`() {
         #expect(throws: Path.Component.Error.containsPathSeparator) {
-            try Path.Component.init("foo/bar")
+            try Path.Component("foo/bar")
         }
     }
 
     @Test
     func `Interior NUL byte throws containsInteriorNUL`() {
         #expect(throws: Path.Component.Error.containsInteriorNUL) {
-            try Path.Component.init("file\0.txt")
+            try Path.Component("file\0.txt")
         }
     }
 
     @Test
     func `Control character throws containsControlCharacters`() {
         #expect(throws: Path.Component.Error.containsControlCharacters) {
-            try Path.Component.init("file\n.txt")
+            try Path.Component("file\n.txt")
         }
     }
 

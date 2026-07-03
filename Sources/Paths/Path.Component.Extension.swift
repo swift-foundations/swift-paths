@@ -20,8 +20,11 @@ extension Path.Component {
     /// let ext = try Path.Component.Extension("txt")
     /// print(ext.string)  // "txt"
     ///
-    /// let invalid = try? Path.Component.Extension("tar.gz")
-    /// // nil — contains dot
+    /// do throws(Path.Component.Extension.Error) {
+    ///     _ = try Path.Component.Extension("tar.gz")
+    /// } catch {
+    ///     // error — contains dot
+    /// }
     /// ```
     public struct Extension: Copyable, Sendable, Hashable {
         /// The validated extension string (without leading dot).
@@ -48,13 +51,13 @@ extension Path.Component {
 
                 // Check for path separators
                 #if os(Windows)
-                if scalar == "/" || scalar == "\\" {
-                    throw .containsPathSeparator
-                }
+                    if scalar == "/" || scalar == "\\" {
+                        throw .containsPathSeparator
+                    }
                 #else
-                if scalar == "/" {
-                    throw .containsPathSeparator
-                }
+                    if scalar == "/" {
+                        throw .containsPathSeparator
+                    }
                 #endif
 
                 // Check for control characters (0x00-0x1F, 0x7F)

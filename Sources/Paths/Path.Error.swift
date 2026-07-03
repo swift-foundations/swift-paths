@@ -28,8 +28,10 @@ extension Path.Error: CustomStringConvertible {
         switch self {
         case .empty:
             return "Path is empty"
+
         case .containsControlCharacters:
             return "Path contains control characters"
+
         case .containsInteriorNUL:
             return "Path contains interior NUL byte"
         }
