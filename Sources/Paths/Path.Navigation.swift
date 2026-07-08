@@ -242,7 +242,7 @@ extension Path {
     /// On POSIX, `Self.separator` (0x2F). On Windows, `Self.separator` (0x5C)
     /// or `Self.altSeparator` (0x2F).
     @inlinable
-    internal static func _isSeparator(_ byte: Char) -> Bool {
+    package static func _isSeparator(_ byte: Char) -> Bool {
         #if os(Windows)
             return byte == Self.separator || byte == Self.altSeparator
         #else

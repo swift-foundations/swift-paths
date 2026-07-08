@@ -43,50 +43,54 @@ extension Path {
         internal let path: Path
 
         @inlinable
-        internal init(_ path: Path) {
+        package init(_ path: Path) {
             self.path = path
         }
+    }
+}
 
-        // MARK: Collection
+// MARK: Collection
 
-        public typealias Element = Component
-        public typealias Index = Int
+extension Path.Components {
+    public typealias Element = Path.Component
+    public typealias Index = Int
 
-        @inlinable
-        public var startIndex: Int {
-            path._firstNonSeparator(from: 0)
-        }
+    @inlinable
+    public var startIndex: Int {
+        path._firstNonSeparator(from: 0)
+    }
 
-        @inlinable
-        public var endIndex: Int {
-            path._storage.count
-        }
+    @inlinable
+    public var endIndex: Int {
+        path._storage.count
+    }
 
-        @inlinable
-        public subscript(position: Int) -> Component {
-            let segmentEnd = path._firstSeparator(from: position) ?? endIndex
-            return Component(
-                storage: Storage(copying: path._storage.buffer[position..<segmentEnd])
-            )
-        }
+    @inlinable
+    public subscript(position: Int) -> Path.Component {
+        let segmentEnd = path._firstSeparator(from: position) ?? endIndex
+        return Path.Component(
+            storage: Path.Storage(copying: path._storage.buffer[position..<segmentEnd])
+        )
+    }
 
-        @inlinable
-        public func index(after i: Int) -> Int {
-            let segmentEnd = path._firstSeparator(from: i) ?? endIndex
-            return path._firstNonSeparator(from: segmentEnd)
-        }
+    @inlinable
+    public func index(after i: Int) -> Int {
+        let segmentEnd = path._firstSeparator(from: i) ?? endIndex
+        return path._firstNonSeparator(from: segmentEnd)
+    }
+}
 
-        // MARK: BidirectionalCollection
+// MARK: BidirectionalCollection
 
-        @inlinable
-        public func index(before i: Int) -> Int {
-            // Walk backward past any separators immediately preceding `i`
-            // to find the end (exclusive) of the previous non-empty segment,
-            // then backward to the preceding separator (or buffer start) to
-            // find that segment's start.
-            let priorSegmentEnd = path._lastNonSeparator(before: i)
-            let priorSeparator = path._lastSeparator(before: priorSegmentEnd)
-            return priorSeparator.map { $0 + 1 } ?? 0
-        }
+extension Path.Components {
+    @inlinable
+    public func index(before i: Int) -> Int {
+        // Walk backward past any separators immediately preceding `i`
+        // to find the end (exclusive) of the previous non-empty segment,
+        // then backward to the preceding separator (or buffer start) to
+        // find that segment's start.
+        let priorSegmentEnd = path._lastNonSeparator(before: i)
+        let priorSeparator = path._lastSeparator(before: priorSegmentEnd)
+        return priorSeparator.map { $0 + 1 } ?? 0
     }
 }

@@ -174,18 +174,22 @@ extension Path {
         internal init(buffer: [Char]) {
             self.buffer = buffer
         }
+    }
+}
 
-        /// The number of characters (excluding null terminator).
-        @usableFromInline
-        internal var count: Int {
-            buffer.count - 1  // Exclude null terminator
-        }
+// MARK: - Storage Introspection
 
-        /// Whether the storage is empty.
-        @usableFromInline
-        internal var isEmpty: Bool {
-            count == 0
-        }
+extension Path.Storage {
+    /// The number of characters (excluding null terminator).
+    @usableFromInline
+    internal var count: Int {
+        buffer.count - 1  // Exclude null terminator
+    }
+
+    /// Whether the storage is empty.
+    @usableFromInline
+    internal var isEmpty: Bool {
+        count == 0
     }
 }
 
