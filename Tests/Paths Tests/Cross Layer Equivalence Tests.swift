@@ -32,8 +32,8 @@ import Testing
 /// Windows is excluded until Phase 4a Windows lands the corresponding
 /// `Path.Borrowed: Path.Protocol` conformance in swift-windows-standard.
 #if !os(Windows)
-    @Suite("L1 ↔ L3 equivalence (POSIX)")
-    struct CrossLayerPathEquivalencePOSIX {
+    @Suite
+    struct `L1 ↔ L3 equivalence (POSIX)` {
 
         /// POSIX fixture set. Covers root, nested, trailing separator,
         /// bare filename, dot-components, and deeply nested shapes.
@@ -64,8 +64,8 @@ import Testing
         /// anchors; generated fixtures provide stochastic coverage.
         static let allFixtures: [Swift.String] = fixtures + generatedFixtures
 
-        @Test("parent content-bytes agree", arguments: allFixtures)
-        func parentEquivalence(fixture: Swift.String) throws {
+        @Test( arguments: allFixtures
+        func `Parent content-bytes agree`(fixture: Swift.String) throws {
             let l3 = try Path(fixture)
 
             // L1 parent via the kernel view (routes through Path.Protocol).
@@ -118,8 +118,8 @@ import Testing
             .init(base: "a/b", other: "c/d"),
         ]
 
-        @Test("appending(Path) relative content-bytes agree", arguments: appendingFixtures)
-        func appendingPathRelativeEquivalence(fixture: AppendingFixture) throws {
+        @Test( arguments: appendingFixtures
+        func `Appending(Path) relative content-bytes agree`(fixture: AppendingFixture) throws {
             let base = try Path(fixture.base)
             let other = try Path(fixture.other)
 
