@@ -318,45 +318,63 @@ struct PathTests {
 @Suite("Path.Error Tests")
 struct PathErrorTests {
 
+    // NOTE: each invalid string below is bound to a `Swift.String` `let`
+    // before being passed to `Path(_:)`. `Path("literal")` written directly
+    // resolves the *string literal itself* through `Path: ExpressibleByStringLiteral`
+    // (which `fatalError`s on invalid content) rather than through the
+    // explicit `throws(Error) init(_:)` these tests mean to exercise —
+    // literal-to-`ExpressibleByStringLiteral` conversion is a type-checking
+    // pass over the literal token, independent of normal overload ranking, so
+    // it applies even under `try`. Passing an already-`String`-typed value
+    // (not a literal expression) has no literal conversion to apply and
+    // therefore reaches `init(_:)` unambiguously. Pre-existing bug: this
+    // package's own baseline crashes `swift test` on these six cases with
+    // `Fatal error: Invalid path literal: ...` instead of throwing.
     @Test
     func `Empty path throws empty error`() {
+        let invalid: Swift.String = ""
         #expect(throws: Path.Error.empty) {
-            try Path("")
+            try Path(invalid)
         }
     }
 
     @Test
     func `Interior NUL byte throws containsInteriorNUL`() {
+        let invalid: Swift.String = "/tmp/file\0.txt"
         #expect(throws: Path.Error.containsInteriorNUL) {
-            try Path("/tmp/file\0.txt")
+            try Path(invalid)
         }
     }
 
     @Test
     func `Newline character throws containsControlCharacters`() {
+        let invalid: Swift.String = "/tmp/file\n.txt"
         #expect(throws: Path.Error.containsControlCharacters) {
-            try Path("/tmp/file\n.txt")
+            try Path(invalid)
         }
     }
 
     @Test
     func `Carriage return throws containsControlCharacters`() {
+        let invalid: Swift.String = "/tmp/file\r.txt"
         #expect(throws: Path.Error.containsControlCharacters) {
-            try Path("/tmp/file\r.txt")
+            try Path(invalid)
         }
     }
 
     @Test
     func `Tab character throws containsControlCharacters`() {
+        let invalid: Swift.String = "/tmp/file\t.txt"
         #expect(throws: Path.Error.containsControlCharacters) {
-            try Path("/tmp/file\t.txt")
+            try Path(invalid)
         }
     }
 
     @Test
     func `Bell character throws containsControlCharacters`() {
+        let invalid: Swift.String = "/tmp/file\u{07}.txt"
         #expect(throws: Path.Error.containsControlCharacters) {
-            try Path("/tmp/file\u{07}.txt")
+            try Path(invalid)
         }
     }
 
@@ -511,31 +529,40 @@ struct PathComponentTests {
 @Suite("Path.Component.Error Tests")
 struct PathComponentErrorTests {
 
+    // NOTE: see the parallel comment in `PathErrorTests` above — each invalid
+    // string is bound to a `Swift.String` `let` first so `Path.Component(_:)`
+    // reaches the explicit `throws(Error) init(_:)` instead of resolving the
+    // literal through `Path.Component: ExpressibleByStringLiteral`, which
+    // `fatalError`s on invalid content.
     @Test
     func `Empty component throws empty error`() {
+        let invalid: Swift.String = ""
         #expect(throws: Path.Component.Error.empty) {
-            try Path.Component("")
+            try Path.Component(invalid)
         }
     }
 
     @Test
     func `Component with path separator throws error`() {
+        let invalid: Swift.String = "foo/bar"
         #expect(throws: Path.Component.Error.containsPathSeparator) {
-            try Path.Component("foo/bar")
+            try Path.Component(invalid)
         }
     }
 
     @Test
     func `Interior NUL byte throws containsInteriorNUL`() {
+        let invalid: Swift.String = "file\0.txt"
         #expect(throws: Path.Component.Error.containsInteriorNUL) {
-            try Path.Component("file\0.txt")
+            try Path.Component(invalid)
         }
     }
 
     @Test
     func `Control character throws containsControlCharacters`() {
+        let invalid: Swift.String = "file\n.txt"
         #expect(throws: Path.Component.Error.containsControlCharacters) {
-            try Path.Component("file\n.txt")
+            try Path.Component(invalid)
         }
     }
 
