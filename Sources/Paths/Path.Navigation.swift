@@ -155,6 +155,17 @@ extension Path {
     /// ```
     @inlinable
     public func hasPrefix(_ other: Path) -> Bool {
+        // Rootedness must agree before comparing components: `Components`
+        // strips the leading separator/UNC-prefix that marks a path as
+        // absolute, so an absolute path's leading component(s) are otherwise
+        // textually indistinguishable from a relative path's leading
+        // component(s) (e.g. "/foo/bar" vs "foo", or "/foo" as a false
+        // "prefix" of relative "foo/etc"). Windows drive letters and UNC
+        // hosts remain literal leading components once this boundary is
+        // enforced, so component-wise comparison already disambiguates
+        // differing drive letters ("C:" vs "D:") and differing UNC hosts.
+        guard isAbsolute == other.isAbsolute else { return false }
+
         let selfComponents = components
         let otherComponents = other.components
 
@@ -182,6 +193,12 @@ extension Path {
     /// ```
     @inlinable
     public func relative(to base: Path) -> Path? {
+        // Rootedness must agree before comparing components — see the same
+        // guard in `hasPrefix` for why: `Components` strips the leading
+        // separator/UNC-prefix, so absolute vs. relative rootedness is not
+        // otherwise visible to a component-wise walk.
+        guard isAbsolute == base.isAbsolute else { return nil }
+
         // Walk both components in lockstep; verify prefix match and collect
         // the remainder of self in one pass. `Components` iterators are lazy
         // over the byte buffer, so no intermediate arrays materialize.
