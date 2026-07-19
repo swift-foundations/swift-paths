@@ -241,18 +241,34 @@ extension Path {
 // MARK: - Path Bridge
 
 extension Path {
-    /// A `Path_Primitives.Path.Borrowed` for syscall interop.
+    /// Executes `body` with a `Path_Primitives.Path.Borrowed` bridge for
+    /// syscall interop, valid only for the duration of the closure.
     ///
     /// ## Zero-Allocation on POSIX
     ///
     /// On POSIX systems, both `Path` and `Path_Primitives.Path` store UTF-8 bytes,
-    /// so this property borrows directly from the internal buffer without allocation.
+    /// so this borrows directly from the internal buffer without allocation.
+    ///
+    /// ## Why a closure, not a property
+    ///
+    /// The underlying pointer is produced by `withUnsafeBufferPointer`, whose
+    /// stdlib contract guarantees validity only for the duration of that
+    /// closure. A prior `kernelPath` computed property escaped the pointer
+    /// past the closure and asserted its extended validity via
+    /// `_overrideLifetime` — that assertion is not backed by any compiler- or
+    /// stdlib-verified guarantee. Keeping the bridge's construction and use
+    /// entirely inside the closure respects the contract instead of trusting
+    /// an unverified lifetime override.
     @inlinable
-    public var kernelPath: Path_Primitives.Path.Borrowed {
-        @_lifetime(borrow self) borrowing get {
-            let ptr = unsafe _storage.buffer.withUnsafeBufferPointer { $0.baseAddress! }
-            let view = unsafe Path_Primitives.Path.Borrowed(ptr, count: _storage.buffer.count - 1)
-            return unsafe _overrideLifetime(view, borrowing: self)
+    public func withKernelPath<R, E: Swift.Error>(
+        _ body: (borrowing Path_Primitives.Path.Borrowed) throws(E) -> R
+    ) throws(E) -> R {
+        try unsafe _storage.buffer.withUnsafeBufferPointer { ptr throws(E) in
+            let view = unsafe Path_Primitives.Path.Borrowed(
+                ptr.baseAddress!,
+                count: _storage.buffer.count - 1
+            )
+            return try unsafe body(view)
         }
     }
 }

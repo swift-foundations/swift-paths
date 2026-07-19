@@ -29,8 +29,9 @@ extension Path {
     ///
     /// ```swift
     /// let path = try Path("/tmp/file.txt")
-    /// let view = path.view  // Borrowed, non-escaping
-    /// // Use view for syscalls or comparisons
+    /// path.withView { view in
+    ///     // Use view for syscalls or comparisons
+    /// }
     /// ```
     @safe
     public struct Borrowed: ~Copyable, ~Escapable {
@@ -53,17 +54,6 @@ extension Path.Borrowed {
         unsafe (self.pointer = pointer)
     }
 
-    /// Creates a borrowed view from an owned `Path`.
-    ///
-    /// This is the primary way to get a `Borrowed` from a `Path`.
-    /// The view's lifetime is tied to the path's lifetime.
-    @inlinable
-    @_lifetime(borrow path)
-    public init(borrowing path: borrowing Path) {
-        // Borrow directly from the path's internal buffer
-        let ptr = unsafe path._storage.buffer.withUnsafeBufferPointer { $0.baseAddress! }
-        unsafe (self.pointer = ptr)
-    }
 }
 
 // MARK: - Access
@@ -111,16 +101,25 @@ extension Path.Borrowed {
     }
 }
 
-// MARK: - Borrowed Property
+// MARK: - Borrowed Access
 
 extension Path {
-    /// A non-escaping borrowed view of this path.
+    /// Executes `body` with a non-escaping borrowed view of this path, valid
+    /// only for the duration of the closure.
     ///
-    /// The view borrows from this path and cannot outlive it.
+    /// Replaces a former `view` property + `Borrowed.init(borrowing:)` pair
+    /// that escaped a pointer out of `withUnsafeBufferPointer` and asserted
+    /// its extended validity via `_overrideLifetime` — an assertion not
+    /// backed by any compiler- or stdlib-verified guarantee. Keeping the
+    /// view's construction and use entirely inside the closure respects the
+    /// stdlib's documented lifetime contract instead.
     @inlinable
-    public var view: Borrowed {
-        @_lifetime(borrow self) borrowing get {
-            Borrowed(borrowing: self)
+    public func withView<R, E: Swift.Error>(
+        _ body: (borrowing Borrowed) throws(E) -> R
+    ) throws(E) -> R {
+        try unsafe _storage.buffer.withUnsafeBufferPointer { ptr throws(E) in
+            let view = unsafe Borrowed(ptr.baseAddress!)
+            return try unsafe body(view)
         }
     }
 }

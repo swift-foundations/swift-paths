@@ -69,10 +69,9 @@ import Testing
             let l3 = try Path(fixture)
 
             // L1 parent via the kernel view (routes through Path.Protocol).
-            // Scoped: the ~Escapable view + span die with this `do` block.
+            // Scoped: the ~Escapable view + span die with this closure.
             var l1Bytes: [UInt8]? = nil
-            do {
-                let view = l3.kernelPath
+            l3.withKernelPath { view in
                 if let span = view.parent {
                     var bytes: [UInt8] = []
                     bytes.reserveCapacity(span.count)
@@ -130,14 +129,14 @@ import Testing
             // L1 result: concat via Path.Protocol on kernel views, then
             // iterate the owned Path's .content (L1 convention: excludes NUL).
             var l1Bytes: [UInt8] = []
-            do {
-                let baseView = base.kernelPath
-                let otherView = other.kernelPath
-                let l1Path = baseView.appending(otherView)
-                let span = l1Path.content
-                l1Bytes.reserveCapacity(span.count)
-                for i in 0..<span.count {
-                    l1Bytes.append(span[i])
+            base.withKernelPath { baseView in
+                other.withKernelPath { otherView in
+                    let l1Path = baseView.appending(otherView)
+                    let span = l1Path.content
+                    l1Bytes.reserveCapacity(span.count)
+                    for i in 0..<span.count {
+                        l1Bytes.append(span[i])
+                    }
                 }
             }
 
