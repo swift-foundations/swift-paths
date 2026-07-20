@@ -15,8 +15,8 @@ import Testing
 
 // MARK: - Path Tests
 
-@Suite("Path Tests")
-struct PathTests {
+@Suite
+struct Test {
 
     // MARK: - Initialization
 
@@ -212,8 +212,8 @@ struct PathTests {
         #expect(rel?.string == "Documents/file.txt")
     }
 
-    @Test("relative(to:) returns `.` for equal paths")
-    func relativeEqualPaths() throws {
+    @Test
+    func `Relative(to:) returns . for equal paths`() throws {
         let p = try Path("/Users/coen")
         let rel = p.relative(to: p)
         #expect(rel?.string == ".")
@@ -315,8 +315,8 @@ struct PathTests {
 
 // MARK: - Path.Error Tests
 
-@Suite("Path.Error Tests")
-struct PathErrorTests {
+@Suite
+struct Test {
 
     // NOTE: each invalid string below is bound to a `Swift.String` `let`
     // before being passed to `Path(_:)`. `Path("literal")` written directly
@@ -406,8 +406,8 @@ struct PathErrorTests {
 
 // MARK: - Path.Component Tests
 
-@Suite("Path.Component Tests")
-struct PathComponentTests {
+@Suite
+struct Test {
 
     // MARK: - Initialization
 
@@ -526,8 +526,8 @@ struct PathComponentTests {
 
 // MARK: - Path.Component.Error Tests
 
-@Suite("Path.Component.Error Tests")
-struct PathComponentErrorTests {
+@Suite
+struct Test {
 
     // NOTE: see the parallel comment in `PathErrorTests` above — each invalid
     // string is bound to a `Swift.String` `let` first so `Path.Component(_:)`
