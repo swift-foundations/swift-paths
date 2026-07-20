@@ -64,7 +64,7 @@ import Testing
         /// anchors; generated fixtures provide stochastic coverage.
         static let allFixtures: [Swift.String] = fixtures + generatedFixtures
 
-        @Test( arguments: allFixtures
+        @Test(arguments: allFixtures)
         func `Parent content-bytes agree`(fixture: Swift.String) throws {
             let l3 = try Path(fixture)
 
@@ -117,7 +117,7 @@ import Testing
             .init(base: "a/b", other: "c/d"),
         ]
 
-        @Test( arguments: appendingFixtures
+        @Test(arguments: appendingFixtures)
         func `Appending(Path) relative content-bytes agree`(fixture: AppendingFixture) throws {
             let base = try Path(fixture.base)
             let other = try Path(fixture.other)
