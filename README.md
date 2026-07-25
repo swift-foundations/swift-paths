@@ -67,6 +67,36 @@ Requires Swift 6.3.1 and macOS 26 / iOS 26 / tvOS 26 / watchOS 26 / visionOS 26.
 
 ---
 
+## Error Handling
+
+Path construction throws a typed `Path.Error`:
+
+```
+Path.Error
+├── .empty                       // the path string is empty
+├── .containsControlCharacters   // ASCII control bytes (0x00–0x1F, 0x7F)
+└── .containsInteriorNUL         // an interior NUL byte
+```
+
+```swift
+do {
+    let path = try Path("/etc/hosts")
+    _ = path
+} catch .empty {
+    // reject empty input
+} catch .containsControlCharacters {
+    // reject control characters
+} catch .containsInteriorNUL {
+    // reject interior NUL
+}
+```
+
+Path *component* construction (stem and extension) surfaces its own typed errors —
+`Path.Component.Error`, `Path.Component.Stem.Error`, `Path.Component.Extension.Error`
+— with the same exhaustive, `Equatable` shape.
+
+---
+
 ## Community
 
 <!-- BEGIN: discussion -->
