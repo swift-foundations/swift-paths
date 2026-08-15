@@ -35,7 +35,10 @@ extension Path.Navigation.`Edge Case` {
     // MARK: hasPrefix
 
     @Test
-    func `hasPrefix is false when self is absolute and other is relative with the same leading component`() throws {
+    func
+        `hasPrefix is false when self is absolute and other is relative with the same leading component`()
+        throws
+    {
         let path = try Path("/foo/bar")
         let other = try Path("foo")
         #expect(path.hasPrefix(other) == false)
@@ -49,7 +52,10 @@ extension Path.Navigation.`Edge Case` {
     }
 
     @Test
-    func `hasPrefix is false when self is relative and other is absolute with the same leading component`() throws {
+    func
+        `hasPrefix is false when self is relative and other is absolute with the same leading component`()
+        throws
+    {
         let path = try Path("foo/etc")
         let other = try Path("/foo")
         #expect(path.hasPrefix(other) == false)
@@ -72,7 +78,10 @@ extension Path.Navigation.`Edge Case` {
     // MARK: relative(to:)
 
     @Test
-    func `relative(to:) is nil when self is absolute and base is relative with the same leading component`() throws {
+    func
+        `relative(to:) is nil when self is absolute and base is relative with the same leading component`()
+        throws
+    {
         let path = try Path("/foo/bar")
         let base = try Path("foo")
         #expect(path.relative(to: base) == nil)
@@ -86,7 +95,10 @@ extension Path.Navigation.`Edge Case` {
     }
 
     @Test
-    func `relative(to:) is nil when self is relative and base is absolute with the same leading component`() throws {
+    func
+        `relative(to:) is nil when self is relative and base is absolute with the same leading component`()
+        throws
+    {
         let path = try Path("foo/etc")
         let base = try Path("/foo")
         #expect(path.relative(to: base) == nil)
