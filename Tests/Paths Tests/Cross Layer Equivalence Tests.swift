@@ -58,7 +58,10 @@ import Testing
         /// SplitMix64 PRNG for reproducibility. Covers paths the hand-written
         /// set does not anticipate (runs of separators, non-ASCII printable
         /// bytes, long paths, paths with separators at varied positions).
-        static let generatedFixtures: [Swift.String] = Self.generatePaths(count: 100, seed: 0xDEAD_BEEF_CAFE_BABE)
+        static let generatedFixtures: [Swift.String] = Self.generatePaths(
+            count: 100,
+            seed: 0xDEAD_BEEF_CAFE_BABE
+        )
 
         /// Combined fixture set. Fixed fixtures provide readable regression
         /// anchors; generated fixtures provide stochastic coverage.

@@ -576,7 +576,10 @@ extension Path.Component.Error {
         @Test
         func `Error cases are equatable`() {
             #expect(Path.Component.Error.empty == Path.Component.Error.empty)
-            #expect(Path.Component.Error.containsPathSeparator == Path.Component.Error.containsPathSeparator)
+            #expect(
+                Path.Component.Error.containsPathSeparator
+                    == Path.Component.Error.containsPathSeparator
+            )
             #expect(Path.Component.Error.empty != Path.Component.Error.containsPathSeparator)
         }
 
