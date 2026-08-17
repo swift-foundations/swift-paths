@@ -66,10 +66,12 @@ extension Path {
 
         @Test
         func `Parent chain`() throws {
-            let path = try Path("/a/b/c")
-            #expect(path.parent?.string == "/a/b")
-            #expect(path.parent?.parent?.string == "/a")
-            #expect(path.parent?.parent?.parent?.string == "/")
+            let root = Path.Fixture.root
+            let sep = Path.Fixture.separator
+            let path = try Path("\(root)a\(sep)b\(sep)c")
+            #expect(path.parent?.string == "\(root)a\(sep)b")
+            #expect(path.parent?.parent?.string == "\(root)a")
+            #expect(path.parent?.parent?.parent?.string == root)
             #expect(path.parent?.parent?.parent?.parent == nil)
         }
 
@@ -145,8 +147,9 @@ extension Path {
         @Test
         func `Slash operator with string`() throws {
             let path = try Path("/usr")
+            let sep = Path.Fixture.separator
             let newPath = path / "local" / "bin"
-            #expect(newPath.string == "/usr/local/bin")
+            #expect(newPath.string == "/usr\(sep)local\(sep)bin")
         }
 
         @Test
@@ -154,14 +157,15 @@ extension Path {
             let path = try Path("/usr")
             let component = try Path.Component("local")
             let newPath = path / component
-            #expect(newPath.string == "/usr/local")
+            #expect(newPath.string == "/usr\(Path.Fixture.separator)local")
         }
 
         @Test
         func `Slash operator with chained components`() throws {
             let dir = try Path("/Users/coen")
+            let sep = Path.Fixture.separator
             let nested = dir / "Documents" / "Projects" / "readme.txt"
-            #expect(nested.string == "/Users/coen/Documents/Projects/readme.txt")
+            #expect(nested.string == "/Users/coen\(sep)Documents\(sep)Projects\(sep)readme.txt")
         }
 
         @Test
@@ -169,7 +173,11 @@ extension Path {
             let dir = try Path("/Users/coen")
             let rel = try Path("Documents/Projects/readme.txt")
             let nested = dir / rel
-            #expect(nested.string == "/Users/coen/Documents/Projects/readme.txt")
+            let sep = Path.Fixture.separator
+            // Only the seam between `dir` and `rel` is a freshly inserted
+            // separator; `rel`'s own interior bytes are carried through as
+            // written (both `\` and `/` are separators on Windows).
+            #expect(nested.string == "/Users/coen\(sep)Documents/Projects/readme.txt")
         }
 
         // MARK: - hasPrefix
@@ -210,7 +218,7 @@ extension Path {
             let full = try Path("/Users/coen/Documents/file.txt")
             let base = try Path("/Users/coen")
             let rel = full.relative(to: base)
-            #expect(rel?.string == "Documents/file.txt")
+            #expect(rel?.string == "Documents\(Path.Fixture.separator)file.txt")
         }
 
         @Test
@@ -525,7 +533,7 @@ extension Path.Component {
             let path = try Path("/usr/local")
             let component = try Path.Component("bin")
             let newPath = path / component
-            #expect(newPath.string == "/usr/local/bin")
+            #expect(newPath.string == "/usr/local\(Path.Fixture.separator)bin")
         }
     }
 }
