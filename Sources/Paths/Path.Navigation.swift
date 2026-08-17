@@ -63,6 +63,12 @@ extension Path {
             if lastSep == 0 {
                 return nil
             }
+            // A drive root is its own topmost directory: `C:\` has no parent.
+            // Without this the next branch would map `C:\` back onto `C:\`,
+            // so a parent walk would never terminate.
+            if lastSep == 2 && _storage.count == 3 && _storage.buffer[1] == 0x3A {
+                return nil
+            }
             // Drive-letter root: `C:\Users` → `C:\`, `C:/foo` → `C:\`.
             // Canonicalize the separator byte to the primary `\`.
             if lastSep == 2 && _storage.buffer[1] == 0x3A {

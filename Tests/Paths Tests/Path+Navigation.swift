@@ -39,7 +39,7 @@ extension Path.Navigation.`Edge Case` {
         `hasPrefix is false when self is absolute and other is relative with the same leading component`()
         throws
     {
-        let path = try Path("/foo/bar")
+        let path = try Path("\(Path.Fixture.root)foo\(Path.Fixture.separator)bar")
         let other = try Path("foo")
         #expect(path.hasPrefix(other) == false)
     }
@@ -47,7 +47,7 @@ extension Path.Navigation.`Edge Case` {
     @Test
     func `hasPrefix is false when self is relative and other is the absolute root`() throws {
         let path = try Path("foo")
-        let other = try Path("/")
+        let other = try Path(Path.Fixture.root)
         #expect(path.hasPrefix(other) == false)
     }
 
@@ -57,7 +57,7 @@ extension Path.Navigation.`Edge Case` {
         throws
     {
         let path = try Path("foo/etc")
-        let other = try Path("/foo")
+        let other = try Path("\(Path.Fixture.root)foo")
         #expect(path.hasPrefix(other) == false)
     }
 
@@ -82,7 +82,7 @@ extension Path.Navigation.`Edge Case` {
         `relative(to:) is nil when self is absolute and base is relative with the same leading component`()
         throws
     {
-        let path = try Path("/foo/bar")
+        let path = try Path("\(Path.Fixture.root)foo\(Path.Fixture.separator)bar")
         let base = try Path("foo")
         #expect(path.relative(to: base) == nil)
     }
@@ -90,7 +90,7 @@ extension Path.Navigation.`Edge Case` {
     @Test
     func `relative(to:) is nil when self is relative and base is the absolute root`() throws {
         let path = try Path("foo")
-        let base = try Path("/")
+        let base = try Path(Path.Fixture.root)
         #expect(path.relative(to: base) == nil)
     }
 
@@ -100,15 +100,17 @@ extension Path.Navigation.`Edge Case` {
         throws
     {
         let path = try Path("foo/etc")
-        let base = try Path("/foo")
+        let base = try Path("\(Path.Fixture.root)foo")
         #expect(path.relative(to: base) == nil)
     }
 
     @Test
     func `relative(to:) still strips a genuine absolute base`() throws {
-        let path = try Path("/Users/coen/Documents/file.txt")
-        let base = try Path("/Users/coen")
-        #expect(path.relative(to: base)?.string == "Documents/file.txt")
+        let root = Path.Fixture.root
+        let sep = Path.Fixture.separator
+        let path = try Path("\(root)Users\(sep)coen\(sep)Documents\(sep)file.txt")
+        let base = try Path("\(root)Users\(sep)coen")
+        #expect(path.relative(to: base)?.string == "Documents\(sep)file.txt")
     }
 
     // MARK: Windows drive / UNC rootedness
