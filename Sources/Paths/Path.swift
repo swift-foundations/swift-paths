@@ -232,7 +232,7 @@ extension Path {
     public func withCString<R, E: Swift.Error>(
         _ body: (UnsafePointer<Char>) throws(E) -> R
     ) throws(E) -> R {
-        try unsafe _storage.buffer.withUnsafeBufferPointer { ptr throws(E) in
+        try _storage.buffer.withUnsafeBufferPointer { ptr throws(E) in
             try unsafe body(ptr.baseAddress!)
         }
     }
@@ -263,12 +263,12 @@ extension Path {
     public func withKernelPath<R, E: Swift.Error>(
         _ body: (borrowing Path_Primitives.Path.Borrowed) throws(E) -> R
     ) throws(E) -> R {
-        try unsafe _storage.buffer.withUnsafeBufferPointer { ptr throws(E) in
+        try _storage.buffer.withUnsafeBufferPointer { ptr throws(E) in
             let view = unsafe Path_Primitives.Path.Borrowed(
                 ptr.baseAddress!,
                 count: _storage.buffer.count - 1
             )
-            return try unsafe body(view)
+            return try body(view)
         }
     }
 }

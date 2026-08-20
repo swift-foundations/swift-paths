@@ -117,9 +117,9 @@ extension Path {
     public func withView<R, E: Swift.Error>(
         _ body: (borrowing Borrowed) throws(E) -> R
     ) throws(E) -> R {
-        try unsafe _storage.buffer.withUnsafeBufferPointer { ptr throws(E) in
+        try _storage.buffer.withUnsafeBufferPointer { ptr throws(E) in
             let view = unsafe Borrowed(ptr.baseAddress!)
-            return try unsafe body(view)
+            return try body(view)
         }
     }
 }
