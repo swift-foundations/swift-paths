@@ -1,28 +1,15 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-path open source project
-//
-// Copyright (c) 2024 Coen ten Thije Boonkkamp and the swift-path project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
-// MARK: - Component Errors
-
 extension Path.Component {
-    /// Errors that can occur during component construction.
+
     public enum Error: Swift.Error, Sendable, Equatable {
-        /// The component string is empty.
+
         case empty
-        /// The component contains a path separator.
+
         case containsPathSeparator
-        /// The component contains ASCII control characters.
+
         case containsControlCharacters
-        /// The component contains an interior NUL byte.
+
         case containsInteriorNUL
-        /// The component contains invalid UTF-8 bytes.
+
         case invalidUTF8
     }
 }

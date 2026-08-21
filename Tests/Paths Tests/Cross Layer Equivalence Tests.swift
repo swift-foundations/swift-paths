@@ -1,42 +1,12 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-path open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-path project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
-// Test-only import. Reaches the L2 POSIX `Path.Borrowed: @retroactive Path.Protocol`
-// conformance via the L3 Kernel unification chain per [PLAT-ARCH-006]:
-//   Kernel_Core → POSIX_Kernel → POSIX_Kernel_File → ISO_9945_Kernel_File.
-// Production swift-paths does NOT depend on this — byte-scan is duplicated at L3
-// to avoid inflating the production dep graph.
 import Kernel_Core
 import Testing
 
 @testable import Paths
 
-// MARK: - L1 ↔ L3 equivalence (POSIX)
-
-/// Asserts that L3 `Paths.Path` byte-scan decomposition produces the same
-/// content bytes as the L1 algorithm reached via `Path.Protocol` on the
-/// shared kernel view.
-///
-/// This safeguards Waves 1–5 of the correction cycle: any future divergence
-/// between the L1 reference algorithm and L3's duplicated byte-scan surfaces
-/// here before reaching downstream consumers.
-///
-/// Windows is excluded until Phase 4a Windows lands the corresponding
-/// `Path.Borrowed: Path.Protocol` conformance in swift-windows-standard.
 #if !os(Windows)
     @Suite
     struct `L1 ↔ L3 equivalence (POSIX)` {
 
-        /// POSIX fixture set. Covers root, nested, trailing separator,
-        /// bare filename, dot-components, and deeply nested shapes.
         static let fixtures: [Swift.String] = [
             "/",
             "/foo",
@@ -54,25 +24,17 @@ import Testing
             "../foo",
         ]
 
-        /// Seeded pseudo-random fixtures. Generated once at load time via a
-        /// SplitMix64 PRNG for reproducibility. Covers paths the hand-written
-        /// set does not anticipate (runs of separators, non-ASCII printable
-        /// bytes, long paths, paths with separators at varied positions).
         static let generatedFixtures: [Swift.String] = Self.generatePaths(
             count: 100,
             seed: 0xDEAD_BEEF_CAFE_BABE
         )
 
-        /// Combined fixture set. Fixed fixtures provide readable regression
-        /// anchors; generated fixtures provide stochastic coverage.
         static let allFixtures: [Swift.String] = fixtures + generatedFixtures
 
         @Test(arguments: allFixtures)
         func `Parent content-bytes agree`(fixture: Swift.String) throws {
             let l3 = try Path(fixture)
 
-            // L1 parent via the kernel view (routes through Path.Protocol).
-            // Scoped: the ~Escapable view + span die with this closure.
             var l1Bytes: [UInt8]? = nil
             l3.withKernelPath { view in
                 if let span = view.parent {
@@ -85,7 +47,6 @@ import Testing
                 }
             }
 
-            // L3 parent via Phase 4b byte-scan.
             let l3Bytes: [UInt8]? = l3.parent.map { Self.contentBytes(of: $0) }
 
             #expect(
@@ -98,17 +59,6 @@ import Testing
             )
         }
 
-        // MARK: - appending(Path) — relative-other only
-        //
-        // L3 `appending(Path)` short-circuits when `other.isAbsolute`,
-        // returning `other` unchanged. L1 `Path.Protocol.appending` has
-        // no such short-circuit — it concatenates unconditionally,
-        // producing a doubled-separator path. This is intentional
-        // divergence at the L3 layer, so the equivalence test restricts
-        // to relative-other fixtures where both layers agree.
-
-        /// Relative-other fixtures for `appending(Path)`. Covers trailing
-        /// separator on base (dedup case), root base, nested other.
         static let appendingFixtures: [AppendingFixture] = [
             .init(base: "/Users", other: "coen"),
             .init(base: "/Users", other: "coen/Documents"),
@@ -125,12 +75,9 @@ import Testing
             let base = try Path(fixture.base)
             let other = try Path(fixture.other)
 
-            // L3 result via Phase 4b byte-scan.
             let l3Result = base.appending(other)
             let l3Bytes = Self.contentBytes(of: l3Result)
 
-            // L1 result: concat via Path.Protocol on kernel views, then
-            // iterate the owned Path's .content (L1 convention: excludes NUL).
             var l1Bytes: [UInt8] = []
             base.withKernelPath { baseView in
                 other.withKernelPath { otherView in
@@ -153,16 +100,6 @@ import Testing
             )
         }
 
-        // MARK: - Helpers
-
-        /// Extract content bytes (excluding NUL) from an owned `Paths.Path`.
-        ///
-        /// L3's `.bytes` includes NUL per its syscall-hand-off convention;
-        /// this helper slices it off to align with L1's "content length" semantics.
-        ///
-        /// The parameter type is qualified because `Kernel_Core` re-exports
-        /// `Path_Primitives.Path` via the platform stack, making bare `Path`
-        /// ambiguous in type position.
         static func contentBytes(of path: Paths.Path) -> [UInt8] {
             let span = path.bytes
             var bytes: [UInt8] = []
@@ -182,15 +119,6 @@ import Testing
             "\"\(Swift.String(decoding: bytes, as: UTF8.self))\""
         }
 
-        // MARK: - Generator
-
-        /// Generates `count` pseudo-random valid path strings using a
-        /// SplitMix64 PRNG seeded at `seed` for reproducibility.
-        ///
-        /// Bytes are drawn from the ASCII printable range (0x20-0x7E),
-        /// with `/` (0x2F) weighted at ~25% to ensure separator coverage.
-        /// Length varies in [1, 64]. The result satisfies `Paths.Path`
-        /// validation (non-empty, no control chars, no interior NUL).
         static func generatePaths(count: Int, seed: UInt64) -> [Swift.String] {
             var rng = SplitMix64(seed: seed)
             var result: [Swift.String] = []
@@ -202,13 +130,9 @@ import Testing
                 for _ in 0..<length {
                     let roll = rng.next() % 4
                     if roll == 0 {
-                        bytes.append(0x2F)  // '/'
+                        bytes.append(0x2F)
                     } else {
-                        // Printable ASCII excluding 0x2F (handled above)
-                        // and excluding 0x20-0x2E (avoids spaces / dots / dashes
-                        // at byte boundaries that would bias toward short
-                        // components). Range 0x30-0x7E is digits + letters +
-                        // symbols.
+
                         bytes.append(UInt8(rng.next() % 79) + 0x30)
                     }
                 }
@@ -218,7 +142,6 @@ import Testing
         }
     }
 
-    /// Fixture pair for `appending(Path)` equivalence tests.
     struct AppendingFixture: Sendable, CustomStringConvertible {
         let base: Swift.String
         let other: Swift.String
@@ -226,13 +149,6 @@ import Testing
         var description: Swift.String { "\"\(base)\" + \"\(other)\"" }
     }
 
-    // MARK: - SplitMix64 PRNG
-
-    /// Seeded 64-bit PRNG for reproducible fixture generation.
-    ///
-    /// SplitMix64 is the seeding generator used by xoshiro family PRNGs; it's
-    /// small, fast, and has good statistical properties for test-data use.
-    /// Not cryptographically secure; not for production use.
     struct SplitMix64 {
         private var state: UInt64
 

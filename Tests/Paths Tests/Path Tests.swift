@@ -1,25 +1,10 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-path open source project
-//
-// Copyright (c) 2024 Coen ten Thije Boonkkamp and the swift-path project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Testing
 
 @testable import Paths
 
-// MARK: - Path Tests
-
 extension Path {
     @Suite
     struct Test {
-
-        // MARK: - Initialization
 
         @Test
         func `Valid absolute path initialization`() throws {
@@ -49,8 +34,6 @@ extension Path {
                 #expect(path.isAbsolute == true)
             #endif
         }
-
-        // MARK: - Navigation
 
         @Test
         func `Parent of nested path`() throws {
@@ -93,8 +76,6 @@ extension Path {
             let path = try Path("file.txt")
             #expect(path.components.last?.string == "file.txt")
         }
-
-        // MARK: - Introspection
 
         @Test
         func `Extension of file`() throws {
@@ -142,8 +123,6 @@ extension Path {
             #expect(path.isAbsolute == false)
         }
 
-        // MARK: - Operators
-
         @Test
         func `Slash operator with string`() throws {
             let path = try Path("/usr")
@@ -174,13 +153,9 @@ extension Path {
             let rel = try Path("Documents/Projects/readme.txt")
             let nested = dir / rel
             let sep = Path.Fixture.separator
-            // Only the seam between `dir` and `rel` is a freshly inserted
-            // separator; `rel`'s own interior bytes are carried through as
-            // written (both `\` and `/` are separators on Windows).
+
             #expect(nested.string == "/Users/coen\(sep)Documents/Projects/readme.txt")
         }
-
-        // MARK: - hasPrefix
 
         @Test
         func `hasPrefix returns true for proper prefix`() throws {
@@ -211,8 +186,6 @@ extension Path {
             #expect(!path.hasPrefix(try Path("bar")))
         }
 
-        // MARK: - relative(to:)
-
         @Test
         func `relative(to:) strips the base prefix`() throws {
             let full = try Path("/Users/coen/Documents/file.txt")
@@ -234,8 +207,6 @@ extension Path {
             let base = try Path("/var/log")
             #expect(full.relative(to: base) == nil)
         }
-
-        // MARK: - Components lazy view
 
         @Test
         func `components.last with trailing separator omits empty`() throws {
@@ -263,8 +234,6 @@ extension Path {
             let path = try Path("/a/b/c/d/e")
             #expect(path.components.count == 5)
         }
-
-        // MARK: - Protocols
 
         @Test
         func `ExpressibleByStringLiteral`() {
@@ -323,24 +292,10 @@ extension Path {
     }
 }
 
-// MARK: - Path.Error Tests
-
 extension Path.Error {
     @Suite
     struct Test {
 
-        // NOTE: each invalid string below is bound to a `Swift.String` `let`
-        // before being passed to `Path(_:)`. `Path("literal")` written directly
-        // resolves the *string literal itself* through `Path: ExpressibleByStringLiteral`
-        // (which `fatalError`s on invalid content) rather than through the
-        // explicit `throws(Error) init(_:)` these tests mean to exercise —
-        // literal-to-`ExpressibleByStringLiteral` conversion is a type-checking
-        // pass over the literal token, independent of normal overload ranking, so
-        // it applies even under `try`. Passing an already-`String`-typed value
-        // (not a literal expression) has no literal conversion to apply and
-        // therefore reaches `init(_:)` unambiguously. Pre-existing bug: this
-        // package's own baseline crashes `swift test` on these six cases with
-        // `Fatal error: Invalid path literal: ...` instead of throwing.
         @Test
         func `Empty path throws empty error`() {
             let invalid: Swift.String = ""
@@ -416,13 +371,9 @@ extension Path.Error {
     }
 }
 
-// MARK: - Path.Component Tests
-
 extension Path.Component {
     @Suite
     struct Test {
-
-        // MARK: - Initialization
 
         @Test
         func `Valid component initialization`() throws {
@@ -441,8 +392,6 @@ extension Path.Component {
             let component = try Path.Component("my file.txt")
             #expect(component.string == "my file.txt")
         }
-
-        // MARK: - Properties
 
         @Test
         func `Extension of component`() throws {
@@ -492,8 +441,6 @@ extension Path.Component {
             #expect(component.stem == "Makefile")
         }
 
-        // MARK: - Protocols
-
         @Test
         func `ExpressibleByStringLiteral`() {
             let component: Path.Component = "file.txt"
@@ -526,8 +473,6 @@ extension Path.Component {
             #expect(String(component) == "file.txt")
         }
 
-        // MARK: - Integration with Path
-
         @Test
         func `Component can be appended to path`() throws {
             let path = try Path("/usr/local")
@@ -538,17 +483,10 @@ extension Path.Component {
     }
 }
 
-// MARK: - Path.Component.Error Tests
-
 extension Path.Component.Error {
     @Suite
     struct Test {
 
-        // NOTE: see the parallel comment in `PathErrorTests` above — each invalid
-        // string is bound to a `Swift.String` `let` first so `Path.Component(_:)`
-        // reaches the explicit `throws(Error) init(_:)` instead of resolving the
-        // literal through `Path.Component: ExpressibleByStringLiteral`, which
-        // `fatalError`s on invalid content.
         @Test
         func `Empty component throws empty error`() {
             let invalid: Swift.String = ""

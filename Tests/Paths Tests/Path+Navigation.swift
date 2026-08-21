@@ -1,27 +1,6 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-paths open source project
-//
-// Copyright (c) 2024-2026 Coen ten Thije Boonkkamp and the swift-paths project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Testing
 
 @testable import Paths
-
-// MARK: - F-002 regression: rootedness agreement in hasPrefix / relative(to:)
-//
-// `Components` strips the leading separator (POSIX) or UNC prefix (Windows)
-// that marks a path as absolute, so an absolute path's leading component(s)
-// were textually indistinguishable from a relative path's leading
-// component(s). `hasPrefix`/`relative(to:)` walked components without first
-// checking that `self`/`other` agree on `isAbsolute`, so containment checks
-// could spuriously succeed across mismatched roots (e.g. relative "foo" read
-// as a "prefix" of absolute "/foo/bar").
 
 extension Path {
     @Suite
@@ -32,7 +11,6 @@ extension Path {
 }
 
 extension Path.Navigation.`Edge Case` {
-    // MARK: hasPrefix
 
     @Test
     func
@@ -75,8 +53,6 @@ extension Path.Navigation.`Edge Case` {
         #expect(path.hasPrefix(other))
     }
 
-    // MARK: relative(to:)
-
     @Test
     func
         `relative(to:) is nil when self is absolute and base is relative with the same leading component`()
@@ -113,13 +89,6 @@ extension Path.Navigation.`Edge Case` {
         #expect(path.relative(to: base)?.string == "Documents\(sep)file.txt")
     }
 
-    // MARK: Windows drive / UNC rootedness
-    //
-    // Windows-specific absolute-path detection (`isAbsolute`) only compiles
-    // its Windows branch under `#if os(Windows)`; on POSIX hosts `isAbsolute`
-    // takes the POSIX branch regardless of the string's shape, so these
-    // cases cannot be meaningfully asserted outside a Windows host. They are
-    // compiled (and will run) only in Windows CI.
     #if os(Windows)
         @Test
         func `hasPrefix is false across differing Windows drive-letter roots`() throws {
